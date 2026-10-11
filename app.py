@@ -11,6 +11,8 @@ import streamlit as st
 from typing import Optional, List, Dict, Any, Set, Tuple
 from sentence_transformers import SentenceTransformer
 
+from answer_prompts import build_rag_prompts
+
 from esg_tables import (
     get_carbon_emissions_df,
     get_carbon_removal_df,
@@ -3010,22 +3012,7 @@ with tab_chat:
                                 context_str = build_evidence_context(chunks)
                                 show_live_status(status_placeholder, "✍️ Yanıt oluşturuluyor..." if target_lang == "tr" else "✍️ Generating response...")
 
-                                if target_lang == "tr":
-                                    rag_system = (
-                                        "Sen Microsoft Sürdürülebilirlik Raporları uzmanısın. Soruyu doğrudan ve akıcı yanıtla. "
-                                        "Şablon başlık kullanma, cevaba hemen başla. Karşılaştırmalı veriler için tablo, aksiyonlar için madde kullan. "
-                                        "Yalnızca bağlamdaki verileri kullan, uydurma."
-                                    )
-                                    user_prompt = f"Bağlam:\n{context_str}\n\nSoru: {query_to_run}"
-                                else:
-                                    rag_system = (
-                                        "You are a Microsoft Sustainability Report expert. Answer directly and fluently. "
-                                        "No template headers, start with the answer. Use tables for comparisons, bullets for actions. "
-                                        "Use only facts from the context, never fabricate."
-                                    )
-                                    user_prompt = f"Context:\n{context_str}\n\nQuestion: {query_to_run}"
-
-                                rag_system += " " + temporal_evidence_instruction(query_to_run)
+                                rag_system, user_prompt = build_rag_prompts(context_str, query_to_run, target_lang)
                                 stream_gen = query_foundry_stream(rag_system, user_prompt, temperature=0.1)
 
                     # Akışı başlat — status mesajı ilk token gelene kadar görünür kalır
