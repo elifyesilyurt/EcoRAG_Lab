@@ -13,7 +13,7 @@ import numpy as np
 
 from ingestion_core import numeric_evidence_allowed, prioritize_audited_evidence, INDEX_VERSION
 from temporal_scope import (
-    STATIC_INTENTS, requested_fiscal_years, requested_report_years,
+    STATIC_INTENTS, requested_calendar_years, requested_fiscal_years, requested_report_years,
     retrieval_report_years, select_temporal_chunks, temporal_clarification,
     temporal_evidence_instruction, temporal_intent,
 )
@@ -21,6 +21,21 @@ from test_baseline_regressions import load_app_functions
 
 
 class TestTemporalContracts(unittest.TestCase):
+    def test_explicit_calendar_period_is_not_ambiguous_or_fiscal(self):
+        for query in ('CY2025 packaging', 'calendar year 2025 packaging', 'takvim yılı 2025 ambalaj'):
+            self.assertEqual(requested_calendar_years(query), ('CY2025',))
+            self.assertEqual(requested_fiscal_years(query), ())
+            self.assertIsNone(temporal_clarification(query))
+        self.assertEqual(requested_calendar_years('2025 packaging'), ())
+        self.assertIsNotNone(temporal_clarification('2025 packaging'))
+
+    def test_calendar_evidence_gate_rejects_fiscal_substitution(self):
+        from ingestion_core import select_evidence_chunks
+        fiscal = {'content': 'Metric: packaging (%)\nFY25: 4.2', 'year': '2026'}
+        calendar = {'content': 'Metric: packaging (%)\nCY2025: 0.07', 'year': '2026'}
+        self.assertEqual(select_evidence_chunks([fiscal], scope_query='CY2025 packaging'), [])
+        self.assertEqual(select_evidence_chunks([calendar], scope_query='calendar year 2025 packaging'), [calendar])
+
     def test_fiscal_spellings_ranges_and_targets(self):
         for query in ('FY24', 'FY 24', 'fy2024', 'FY 2024'):
             self.assertEqual(requested_fiscal_years(query), ('FY24',))

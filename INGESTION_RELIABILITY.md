@@ -116,3 +116,5 @@ metric selection, corpus conflict handling, retrieval relevance and real Foundry
 answer faithfulness still require evaluation. Legacy benchmark scores have not
 been rerun and do not validate the new corpus. Carbon-removal, packaging and
 waste figures/summaries remain separate source-audit work.
+
+Packaging update: the rebuilt index contains 1,600 chunks, including 44 audited rows. Table 11 fiscal packaging rows and its separate CY2025 footnote row retain source page/hash and period qualifications. Provider/index parity, vector integrity and source manifests pass the offline checks.

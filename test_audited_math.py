@@ -178,6 +178,28 @@ class TestExplicitMetricBinding(unittest.TestCase):
             self.assertEqual(attempts[0]['selection'], 'explicit_audited_metric_binding')
         model.assert_not_called()
 
+    def test_packaging_calendar_and_fiscal_cannot_substitute(self):
+        rows = [evidence(77, 'Single-use plastics in primary product packaging', '%', {'FY24': '5.4', 'FY25': '4.2'}),
+                evidence(83, 'Single-use plastics in primary product packaging', '%', {'CY2025': '0.07'})]
+        from audited_math import calculate_with_model
+        from unittest.mock import Mock
+        model = Mock(side_effect=AssertionError('Explicit periods should bind directly'))
+        for period, value in [('FY24', 5.4), ('FY25', 4.2), ('CY2025', .07)]:
+            result, _ = calculate_with_model(f'{period} single-use plastics in primary product packaging percentage', rows, model)
+            self.assertEqual(result['result'], value)
+        bad = execute_audited_plan(plan('value', '%', [(83, 'CY2025')]), rows, 'FY25 packaging percentage')
+        self.assertFalse(bad['success'])
+        mixed = execute_audited_plan(plan('percent_change', '%', [(83, 'CY2025'), (77, 'FY25')]), rows,
+                                    'FY25 CY2025 packaging percent change')
+        self.assertFalse(mixed['success'])
+
+    def test_primary_packaging_does_not_answer_secondary_scope(self):
+        rows = [evidence(44, 'Single-use plastics in primary product packaging', '%', {'FY25': '4.2'})]
+        for scope in ['secondary packaging', 'shipping packaging', 'ikincil ambalaj']:
+            result = execute_audited_plan(plan('value', '%', [(44, 'FY25')]), rows, f'FY25 {scope} plastic percentage')
+            self.assertEqual(result['status'], 'unavailable')
+
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -5,7 +5,7 @@ import re
 import unicodedata
 from decimal import Decimal
 
-from temporal_scope import requested_fiscal_years
+from temporal_scope import requested_fiscal_years, requested_calendar_years
 
 UNITS = {'mt': ('mass', Decimal(1)), 'mtCO2e': ('emissions', Decimal(1)),
          'million m3': ('volume', Decimal(1000000)), 'm3': ('volume', Decimal(1)),
@@ -76,6 +76,9 @@ def unsupported_scope(query, metric):
     q, label = query.lower(), metric.lower()
     limited = ['datacenter', 'data center', 'veri merkezi', 'watershed', 'havza',
                'groundwater', 'surface water', 'third-party water', 'water stress']
+    if 'packaging' in label:
+        limited += ['secondary packaging', 'transport packaging', 'shipping packaging',
+                    'ikincil ambalaj', 'nakliye ambalaj']
     if 'contracted' in label:
         limited += ['direct air capture', 'dac', 'beccs', 'biochar', 'forest', 'nature-based']
     if any(scope in q and scope not in label for scope in limited):
@@ -116,7 +119,7 @@ def execute_audited_plan(raw, chunks, query):
                 or (op not in {'sum', 'value'} and len(refs) != 2) or len(refs) > 20):
             return reject('invalid_plan', f'{op} requires ' + ('exactly ONE source reference.' if op == 'value' else 'at least one source reference.' if op == 'sum' else 'exactly TWO source references, one for each input.'))
         catalog, operands, seen = audited_catalog(chunks), [], set()
-        required_periods = set(requested_fiscal_years(query))
+        required_periods = set(requested_fiscal_years(query) + requested_calendar_years(query))
         for ref in refs:
             if not isinstance(ref, dict) or set(ref) != {'evidence_id', 'period'}:
                 return reject('invalid_plan', 'Model-supplied values/units are forbidden.')
@@ -145,7 +148,7 @@ def execute_audited_plan(raw, chunks, query):
         if len({o['dimension'] for o in operands}) != 1:
             return reject('invalid_plan', 'Incompatible dimensions.')
         if (op in {'percent_change', 'percentage_point_change'}
-                and (operands[0]['metric'] != operands[1]['metric'] or operands[0]['period'] >= operands[1]['period'])):
+                and (operands[0]['metric'] != operands[1]['metric'] or operands[0]['period'][:2] != operands[1]['period'][:2] or operands[0]['period'] >= operands[1]['period'])):
             return reject('invalid_plan', 'Temporal change requires the same metric, oldest period first.')
         # Output units come from the human question/operation, never model metadata.
         default_unit = ('ratio' if op == 'ratio' else '%' if op in {'percent_of', 'percent_change'}
@@ -217,7 +220,7 @@ def bind_explicit_metrics(query, chunks):
     Covers arbitrary rows/values with explicitly requested fiscal periods.
     Unknown/ambiguous names return None for the bounded model selector.
     """
-    periods = list(requested_fiscal_years(query))
+    periods = list(requested_fiscal_years(query) + requested_calendar_years(query))
     if not periods:
         return None
     qtokens = metric_tokens(query)

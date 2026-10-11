@@ -310,6 +310,19 @@ class TestAuditedSources(unittest.TestCase):
         self.assertTrue(all('Water Replenishment' in chunk['content'] for chunk in annual_chunks if chunk['page'] == 25))
         self.assertTrue(all(numeric_evidence_allowed(chunk['content']) for chunk in fact_chunks + annual_chunks))
 
+    def test_packaging_rows_preserve_restatement_and_calendar_basis(self):
+        fixture = json.loads((ROOT / 'tests/fixtures/resource_metrics_2026.json').read_text())
+        rows = [c for c in ingestion.audited_source_chunks(FACT_SHEET, fixture['source_pdf_sha256'])
+                if 'Metric:' in c['content'] and 'packaging' in c['content'].lower() and 'Waste' not in c['content']]
+        self.assertEqual(len(rows), 3)
+        self.assertTrue(all(c['page'] == 8 for c in rows))
+        fiscal = next(c['content'] for c in rows if 'Single-use plastics' in c['content'] and 'FY25:' in c['content'])
+        calendar = next(c['content'] for c in rows if 'CY2025:' in c['content'])
+        self.assertIn('FY25: 4.2', fiscal)
+        self.assertIn('CY2025: 0.07', calendar)
+        self.assertNotIn('FY25:', calendar)
+        self.assertIn('Restated', fiscal)
+
     def test_committed_index_matches_current_audited_rows_and_source_manifest(self):
         with sqlite3.connect(ROOT / 'rag_storage.db') as conn:
             metadata = dict(conn.execute('SELECT key,value FROM index_metadata'))

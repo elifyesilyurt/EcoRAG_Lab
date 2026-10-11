@@ -22,6 +22,13 @@ def requested_fiscal_years(query):
     return tuple(f'FY{year:02d}' for year in sorted(years))
 
 
+def requested_calendar_years(query):
+    """Explicit calendar periods only; bare years remain ambiguous."""
+    q = (query or '').lower()
+    years = re.findall(r'\b(?:cy\s*|calendar[ -]year\s*|takvim yılı\s*)(20\d{2})\b', q)
+    return tuple(f'CY{year}' for year in sorted(set(years)))
+
+
 def requested_report_years(query):
     """Only publication wording establishes a report-year constraint.
 
@@ -48,6 +55,7 @@ def has_temporal_request(query):
 
 def temporal_clarification(query, lang='tr'):
     q = re.sub(r'\bfy\s*(?:20\d{2}|\d{2})\b', '', (query or '').lower())
+    q = re.sub(r"\b(?:cy\s*|calendar[ -]year\s*|takvim yılı\s*)20\d{2}\b", "", q)
     calendar = set(re.findall(r'\b20\d{2}\b', q)) - {'2030', '2050'}
     if calendar and not requested_report_years(query):
         if lang == 'tr':
@@ -147,8 +155,9 @@ def select_temporal_chunks(scores, report_years, max_k, relative_drop, fiscal_ye
 def temporal_evidence_instruction(query):
     fiscal = ', '.join(requested_fiscal_years(query)) or 'as requested in the question'
     return (
-        f'Requested fiscal periods: {fiscal}. Report publication year is not fiscal year. '
-        'Use only explicitly labelled fiscal periods and units in the evidence. '
+        f'Requested fiscal periods: {fiscal}. Requested calendar periods: {requested_calendar_years(query)}. '
+        'Report publication year is not fiscal year; calendar year is also a different period. '
+        'Use only explicitly labelled fiscal/calendar periods and units in the evidence. '
         'Do not substitute a different year or treat a future target as a realized result. '
         'A row for a different metric or geographic scope must never stand in for the requested value. '
         'If any requested period or metric is missing or ambiguous, state that it cannot '

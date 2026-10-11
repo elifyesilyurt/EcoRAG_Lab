@@ -8,7 +8,7 @@ import re
 import sqlite3
 import unicodedata
 
-from temporal_scope import requested_fiscal_years, retrieval_report_years
+from temporal_scope import requested_calendar_years, requested_fiscal_years, retrieval_report_years
 
 INDEX_VERSION = 'row-evidence-v1'
 
@@ -208,6 +208,9 @@ def select_evidence_chunks(chunks, max_characters=12000, scope_query=None, year_
         for fiscal in requested_fiscal_years(scope_query):
             if not any(re.search(rf'\bfy\s*(?:20)?{fiscal[2:]}\b', chunk['content'], re.IGNORECASE)
                        for chunk in selected):
+                return []
+        for calendar in requested_calendar_years(scope_query):
+            if not any(re.search(rf"\b{calendar}\b", chunk["content"], re.IGNORECASE) for chunk in selected):
                 return []
         reports = retrieval_report_years(scope_query, year_filter)
         if reports == () or (reports and not set(reports).issubset({str(chunk['year']) for chunk in selected})):

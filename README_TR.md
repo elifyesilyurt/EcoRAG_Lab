@@ -22,7 +22,7 @@
 ---
 
 
-> Güncel çalışma branch’i: `fix/ecorag-reliability`. 146 çevrimdışı test geçmektedir. İndeks üç rapor ve 2026 veri föyünden oluşur; aşağıdaki eski benchmark skorları yeni indeksle henüz tekrar ölçülmemiştir. Kaynak ve yeniden indeksleme kontrolleri için [INGESTION_RELIABILITY.md](INGESTION_RELIABILITY.md) dosyasına bakın.
+> Güncel çalışma branch’i: `fix/ecorag-reliability`. 151 çevrimdışı test geçmektedir. İndeks üç rapor ve 2026 veri föyünden oluşur; aşağıdaki eski benchmark skorları yeni indeksle henüz tekrar ölçülmemiştir. Kaynak ve yeniden indeksleme kontrolleri için [INGESTION_RELIABILITY.md](INGESTION_RELIABILITY.md) dosyasına bakın.
 
 ## 🎥 Canlı Video Demosu (YouTube)
 
@@ -283,7 +283,7 @@ python generate_and_run_500_benchmark.py
 ├── benchmark_500_dataset.json         # 500 soru, referans yanıtlar ve menşe eşleşmeleri
 ├── benchmark_500_results.json         # Anlık gecikme, sadakat ve rota çalışma logları
 ├── run_benchmarks.py                  # 50 soruluk CLI benchmark paketi
-├── rag_storage.db                     # 1597 indekslenmiş parçalı SQLite vektör veritabanı
+├── rag_storage.db                     # 1600 indekslenmiş parçalı SQLite vektör veritabanı
 ├── docs/                              # Resmi kaynak Microsoft Sürdürülebilirlik PDF raporları
 │   ├── 2026-Microsoft-Environmental-Sustainability-Report-PDF.pdf
 │   ├── Microsoft_2025_Sustainability_Report.pdf

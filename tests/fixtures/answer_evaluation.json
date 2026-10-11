@@ -175,5 +175,40 @@
     "mode": "math",
     "expected_result": 337.23403640145733,
     "tolerance": 0.01
+  },
+  {
+    "id": "packaging-fy25-audited",
+    "query": "FY25 single-use plastics in primary product packaging percentage",
+    "lang": "en",
+    "mode": "math",
+    "expected_result": 4.2
+  },
+  {
+    "id": "packaging-fy24-audited",
+    "query": "FY24 single-use plastics in primary product packaging percentage",
+    "lang": "en",
+    "mode": "math",
+    "expected_result": 5.4
+  },
+  {
+    "id": "packaging-cy2025-audited",
+    "query": "CY2025 single-use plastics in primary product packaging percentage",
+    "lang": "en",
+    "mode": "math",
+    "expected_result": 0.07
+  },
+  {
+    "id": "packaging-recyclability-fy25",
+    "query": "FY25 product packaging recyclability percentage",
+    "lang": "en",
+    "mode": "math",
+    "expected_result": 95.8
+  },
+  {
+    "id": "packaging-point-change",
+    "query": "Calculate percentage point change in single-use plastics in primary product packaging from FY24 to FY25",
+    "lang": "en",
+    "mode": "math",
+    "expected_result": -1.2
   }
 ]
