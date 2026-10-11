@@ -263,15 +263,18 @@ def trim_repetition(raw_text: str) -> str:
     if not raw_text:
         return raw_text
     words = raw_text.split()
+    normalized = [re.sub(r'[^\w]', '', word.lower()) for word in words]
     first_repeat_word_idx = None
     for n in range(4, 25):
-        for i in range(len(words) - 2 * n + 1):
-            pattern = [re.sub(r'[^\w]', '', w.lower()) for w in words[i:i+n]]
-            for j in range(i + n, len(words) - n + 1):
-                candidate = [re.sub(r'[^\w]', '', w.lower()) for w in words[j:j+n]]
-                if pattern == candidate:
-                    if first_repeat_word_idx is None or j < first_repeat_word_idx:
-                        first_repeat_word_idx = j
+        first_seen = {}
+        for start in range(len(words) - n + 1):
+            pattern = tuple(normalized[start:start + n])
+            previous = first_seen.get(pattern)
+            if previous is None:
+                first_seen[pattern] = start
+            elif start - previous >= n:
+                if first_repeat_word_idx is None or start < first_repeat_word_idx:
+                    first_repeat_word_idx = start
 
     if first_repeat_word_idx is not None:
         trimmed = ' '.join(words[:first_repeat_word_idx])

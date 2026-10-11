@@ -65,5 +65,16 @@ class TestModelCodeFormatting(unittest.TestCase):
         trim.assert_not_called()
 
 
+class TestRepetitionPerformance(unittest.TestCase):
+    def test_nonoverlapping_repeat_and_punctuation(self):
+        import re
+        from test_baseline_regressions import load_app_functions
+        trim = load_app_functions({'trim_repetition'}, {'re': re})['trim_repetition']
+        self.assertEqual(trim('one two three four one two three four tail'), 'one two three four')
+        self.assertEqual(trim('one two three four five'), 'one two three four five')
+        text = ' '.join('token' + str(i) for i in range(2000))
+        self.assertEqual(trim(text), text)
+
+
 if __name__ == '__main__':
     unittest.main()
