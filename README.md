@@ -24,7 +24,7 @@
 
 
 
-> Current development branch: `fix/ecorag-reliability`. 188 offline tests pass. The index includes three reports and the 2026 data fact sheet; the historical benchmark scores below have not been rerun against the rebuilt index. See [INGESTION_RELIABILITY.md](INGESTION_RELIABILITY.md) for source and rebuild checks.
+> Current development branch: `fix/ecorag-reliability`. 193 offline tests pass. The index includes three reports and the 2026 data fact sheet; the historical benchmark scores below have not been rerun against the rebuilt index. See [INGESTION_RELIABILITY.md](INGESTION_RELIABILITY.md) for source and rebuild checks.
 
 ## 📸 Visual Showcase & User Interface
 

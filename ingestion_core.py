@@ -10,7 +10,7 @@ import unicodedata
 
 from temporal_scope import requested_calendar_years, requested_fiscal_years, retrieval_report_years
 
-INDEX_VERSION = 'column-row-evidence-v2'
+INDEX_VERSION = 'column-row-evidence-v3'
 
 
 def cell_text(value):

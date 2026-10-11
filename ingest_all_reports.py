@@ -202,14 +202,14 @@ def recursive_character_splitter(
     current_chunk: List[str] = []
     current_len = 0
 
-    for piece in splits:
-        piece_str = piece + chosen_sep if chosen_sep != "" else piece
+    for piece_index, piece in enumerate(splits):
+        piece_str = piece + chosen_sep if chosen_sep and piece_index < len(splits) - 1 else piece
         piece_len = len(piece_str)
 
         if piece_len > chunk_size and len(separators) > 1:
             next_seps = separators[separators.index(chosen_sep) + 1:] if chosen_sep in separators else separators[1:]
             sub_chunks = recursive_character_splitter(
-                piece,
+                piece_str,
                 chunk_size=chunk_size,
                 chunk_overlap=chunk_overlap,
                 min_length=min_length,
@@ -217,15 +217,15 @@ def recursive_character_splitter(
             )
             for sc in sub_chunks:
                 if current_len + len(sc) <= chunk_size:
-                    current_chunk.append(sc)
-                    current_len += len(sc)
+                    current_chunk.append(sc + '\n')
+                    current_len += len(sc) + 1
                 else:
                     if current_chunk:
                         combined = clean_text("".join(current_chunk))
                         if len(combined) >= min_length:
                             chunks.append(combined)
                     overlap_sc = extract_clean_overlap("".join(current_chunk), chunk_overlap) if chunk_overlap > 0 else ""
-                    current_chunk = [overlap_sc, sc] if overlap_sc else [sc]
+                    current_chunk = [overlap_sc + '\n', sc + '\n'] if overlap_sc else [sc + '\n']
                     current_len = sum(len(x) for x in current_chunk)
         else:
             if current_len + piece_len <= chunk_size:
@@ -239,7 +239,7 @@ def recursive_character_splitter(
 
                 if chunk_overlap > 0 and current_chunk:
                     overlap_text = extract_clean_overlap("".join(current_chunk), chunk_overlap)
-                    current_chunk = [overlap_text, piece_str] if overlap_text else [piece_str]
+                    current_chunk = [overlap_text + '\n', piece_str] if overlap_text else [piece_str]
                     current_len = sum(len(x) for x in current_chunk)
                 else:
                     current_chunk = [piece_str]

@@ -120,3 +120,6 @@ waste figures/summaries remain separate source-audit work.
 Packaging update: the rebuilt index contains 1,600 chunks, including 44 audited rows. Table 11 fiscal packaging rows and its separate CY2025 footnote row retain source page/hash and period qualifications. Provider/index parity, vector integrity and source manifests pass the offline checks.
 
 Column-aware rebuild supersedes the previous count: 1,590 chunks, 44 audited rows, index version column-row-evidence-v2. See COLUMN_READING_ORDER.md for the reading-order policy and its limits.
+
+
+Boundary-preserving rebuild: 1,594 chunks, 44 audited rows, index version `column-row-evidence-v3`. Source hashes and audited-row parity pass. See [CHUNK_BOUNDARIES.md](CHUNK_BOUNDARIES.md).

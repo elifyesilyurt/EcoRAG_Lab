@@ -19,6 +19,40 @@ FACT_SHEET = 'Microsoft_2026_Environmental_Data_Fact_Sheet.pdf'
 REPORT = '2026-Microsoft-Environmental-Sustainability-Report-PDF.pdf'
 
 
+class TestChunkBoundaries(unittest.TestCase):
+    def test_overlap_keeps_sentence_boundary(self):
+        text = ' '.join(f'Sentence {i} explains renewable electricity policy.' for i in range(15))
+        chunks = ingestion.recursive_character_splitter(text, chunk_size=150, chunk_overlap=50, min_length=1)
+        self.assertGreater(len(chunks), 2)
+        for chunk in chunks:
+            self.assertNotRegex(chunk, r'policy\.Sentence')
+            self.assertIn(chunk.replace('\n', ' '), text)
+
+    def test_recursive_chunks_preserve_word_boundaries(self):
+        text = ' '.join('word' + str(i) for i in range(100))
+        chunks = ingestion.recursive_character_splitter(text, chunk_size=85, chunk_overlap=20, min_length=1)
+        for chunk in chunks:
+            self.assertNotRegex(chunk, r'word\d+word')
+            self.assertIn(chunk.replace('\n', ' '), text)
+
+    def test_paragraphs_do_not_glue_after_recursive_split(self):
+        paragraph = 'Renewable energy policy supports grid planning. ' * 9
+        text = paragraph + '\n\nCommunity partnerships support replenishment projects. '
+        chunks = ingestion.recursive_character_splitter(text, chunk_size=130, chunk_overlap=35, min_length=1)
+        for chunk in chunks:
+            self.assertNotRegex(chunk, r'\.[A-Z]')
+
+    def test_recursive_split_keeps_original_terminal_punctuation(self):
+        text = ('Water policy supports community projects. ' * 12).strip()
+        chunks = ingestion.recursive_character_splitter(text, chunk_size=110, chunk_overlap=0, min_length=1)
+        self.assertTrue(all(chunk.endswith('.') for chunk in chunks))
+        self.assertEqual(' '.join(chunks), text)
+
+    def test_short_text_remains_unchanged(self):
+        self.assertEqual(ingestion.recursive_character_splitter('Short source sentence.', min_length=1),
+                         ['Short source sentence.'])
+
+
 class TestTableEvidence(unittest.TestCase):
     def test_zero_missing_and_units_are_distinct(self):
         chunks = table_row_evidence([
