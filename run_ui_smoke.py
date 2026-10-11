@@ -16,6 +16,7 @@ def main():
         ('water-calculation', 'Calculate FY25 water withdrawal minus consumption in cubic meters.', ['5096000']),
         ('calendar-packaging', 'What is CY2025 single-use plastics in primary product packaging percentage?', ['0.07']),
         ('multi-source-narrative', 'Describe renewable electricity policy and grid planning.', ['source excerpts|Kaynakta yer alan']),
+        ('scoped-water', 'Describe groundwater withdrawal in Madrid.', ['cannot|doğrulan|bulunamad|yetersiz']),
         ('ambiguous-year', '2025 packaging percentage?', ['fiscal|mali']),
     ]
     app.run()
@@ -42,7 +43,7 @@ def main():
                     refs = {ref['evidence_id'] for ref in validation.get('references', [])}
                     provenance = {chunk['id'] for chunk in answer.get('provenance', [])}
                     passed = passed and validation.get('status') == 'source_excerpt' and bool(refs) and refs == provenance
-                if name == 'calendar-packaging':
+                if name in ('calendar-packaging', 'scoped-water'):
                     passed = passed and answer.get('intent') == 'general_rag'
                 records.append({'case': name, 'query': query, 'passed': passed,
                                 'answer': answer.get('content', ''), 'route': answer.get('route'),

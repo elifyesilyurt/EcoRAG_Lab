@@ -29,6 +29,23 @@ class TestTemporalContracts(unittest.TestCase):
         self.assertEqual(requested_calendar_years('2025 packaging'), ())
         self.assertIsNotNone(temporal_clarification('2025 packaging'))
 
+    def test_undated_scopes_never_use_dashboard_templates(self):
+        questions = (
+            'Explain water replenishment in Madrid.',
+            'Describe secondary packaging plastic rates.',
+            'Explain direct air capture technology shares.',
+            'Describe certified datacenter counts.',
+            'Explain Xbox carbon emissions trends.',
+            'Describe regional carbon-free electricity commitments.',
+            'Su yenileme ortaklıklarını açıkla.',
+        )
+        for intent in STATIC_INTENTS:
+            for question in questions:
+                with self.subTest(intent=intent, question=question):
+                    self.assertEqual(temporal_intent(question, intent), 'general_rag')
+        for intent in ('mathematical_query', 'out_of_domain', 'general_rag'):
+            self.assertEqual(temporal_intent('Describe the topic', intent), intent)
+
     def test_calendar_evidence_gate_rejects_fiscal_substitution(self):
         from ingestion_core import select_evidence_chunks
         fiscal = {'content': 'Metric: packaging (%)\nFY25: 4.2', 'year': '2026'}
@@ -68,7 +85,7 @@ class TestTemporalContracts(unittest.TestCase):
                 with self.subTest(intent=intent, question=question):
                     self.assertEqual(temporal_intent(question, intent), 'general_rag')
             self.assertEqual(temporal_intent('Describe the topic', intent, '2024'), 'general_rag')
-            self.assertEqual(temporal_intent('Describe the topic', intent), intent)
+            self.assertEqual(temporal_intent('Describe the topic', intent), 'general_rag')
         for intent in ('out_of_domain', 'mathematical_query', 'general_rag'):
             self.assertEqual(temporal_intent('FY24', intent, '2024'), intent)
 

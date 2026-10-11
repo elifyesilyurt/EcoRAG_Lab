@@ -69,8 +69,13 @@ def temporal_clarification(query, lang='tr'):
 
 
 def temporal_intent(query, intent, year_filter=None):
-    """All dated topic answers use question-specific evidence, not FY25 text."""
-    if intent in STATIC_INTENTS and (has_temporal_request(query) or year_filter):
+    """Chat topic answers always require question-specific evidence.
+
+    Undated questions can constrain geography, technology or organizational
+    scope too. Dashboard templates cannot establish those constraints.
+    The arguments remain compatible with existing application callers.
+    """
+    if intent in STATIC_INTENTS:
         return 'general_rag'
     return intent
 
