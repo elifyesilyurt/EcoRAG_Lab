@@ -22,7 +22,7 @@
 ---
 
 
-> Güncel çalışma branch’i: `fix/ecorag-reliability`. 143 çevrimdışı test geçmektedir. İndeks üç rapor ve 2026 veri föyünden oluşur; aşağıdaki eski benchmark skorları yeni indeksle henüz tekrar ölçülmemiştir. Kaynak ve yeniden indeksleme kontrolleri için [INGESTION_RELIABILITY.md](INGESTION_RELIABILITY.md) dosyasına bakın.
+> Güncel çalışma branch’i: `fix/ecorag-reliability`. 146 çevrimdışı test geçmektedir. İndeks üç rapor ve 2026 veri föyünden oluşur; aşağıdaki eski benchmark skorları yeni indeksle henüz tekrar ölçülmemiştir. Kaynak ve yeniden indeksleme kontrolleri için [INGESTION_RELIABILITY.md](INGESTION_RELIABILITY.md) dosyasına bakın.
 
 ## 🎥 Canlı Video Demosu (YouTube)
 

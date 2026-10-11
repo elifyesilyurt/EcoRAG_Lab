@@ -57,6 +57,14 @@ class TestAuditedMath(unittest.TestCase):
         candidate = plan('sum', 'm3', [(True, 'FY25')])
         self.assertFalse(execute_audited_plan(candidate, self.rows, 'FY25 water')['success'])
 
+    def test_explicit_question_operation_overrides_wrong_model_operation(self):
+        candidate = plan('difference', '%', [(4, 'FY25'), (3, 'FY25')])
+        result = execute_audited_plan(candidate, self.rows,
+                                     'Calculate FY25 waste diverted as a percentage of total generated')
+        self.assertTrue(result['success'])
+        self.assertEqual(result['operation'], 'percent_of')
+        self.assertAlmostEqual(result['result'], 36149 / 58868 * 100)
+
     def test_wrong_period_and_partial_comparison_rejected(self):
         for refs in [[(1, 'FY24'), (2, 'FY24')], [(1, 'FY25'), (2, 'FY25')]]:
             query = 'FY25 water difference' if refs[0][1] == 'FY24' else 'Compare FY24 and FY25 water'
@@ -111,6 +119,15 @@ class TestAuditedMath(unittest.TestCase):
         self.assertTrue(result['success'])
         self.assertIn('prior years were not adjusted', render_audited_result(result))
 
+    def test_global_rows_cannot_answer_regional_or_technology_requests(self):
+        candidate = plan('value', 'm3', [(1, 'FY25')])
+        for query in ['FY25 water withdrawal in Madrid in cubic meters',
+                      "FY25 Madrid'de su çekimi metreküp", 'FY25 datacenter water withdrawal in m3']:
+            self.assertEqual(execute_audited_plan(candidate, self.rows, query)['status'], 'unavailable')
+        rows = [evidence(1, 'Total Contracted Carbon Removal', 'mt', {'FY24': '21927370'})]
+        result = execute_audited_plan(plan('value', 'mt', [(1, 'FY24')]), rows, 'FY24 DAC contracted carbon removal in metric tons')
+        self.assertEqual(result['status'], 'unavailable')
+
     def test_python_never_executed_and_false_plan_has_no_calculation(self):
         self.assertFalse(execute_audited_plan('result = 1 + 2', self.rows, 'FY25')['success'])
         self.assertEqual(execute_audited_plan({'available': False}, self.rows, 'FY25')['status'], 'unavailable')
@@ -145,6 +162,21 @@ class TestBoundedPlanRepair(unittest.TestCase):
         result, attempts = calculate_with_model('FY25 water', [], model)
         self.assertEqual(result['status'], 'unavailable')
         self.assertEqual(len(attempts), 1)
+
+
+class TestExplicitMetricBinding(unittest.TestCase):
+    def test_arbitrary_source_values_in_two_languages_do_not_call_model(self):
+        from unittest.mock import Mock
+        from audited_math import calculate_with_model
+        rows = [evidence(71, 'Water Withdrawal', 'million m3', {'FY24': '9.125'}),
+                evidence(98, 'Water Consumption', 'million m3', {'FY24': '3.875'})]
+        model = Mock(side_effect=AssertionError('No model needed for explicit audited names'))
+        for query in ['Calculate FY24 water withdrawal minus consumption in cubic meters.',
+                      'FY24 su çekimi ile tüketimi farkını metreküp olarak hesapla.']:
+            result, attempts = calculate_with_model(query, rows, model)
+            self.assertEqual(result['result'], 5250000)
+            self.assertEqual(attempts[0]['selection'], 'explicit_audited_metric_binding')
+        model.assert_not_called()
 
 
 if __name__ == '__main__':
