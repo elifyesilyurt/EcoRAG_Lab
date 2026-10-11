@@ -99,7 +99,7 @@ class TestGroundedNarrative(unittest.TestCase):
 class TestSourceExcerpts(unittest.TestCase):
     def setUp(self):
         self.quote = 'Water stewardship does not mean that all watersheds have achieved replenishment.'
-        self.rows = [{'id': 909, 'title': 'Report.pdf (p.12)', 'content': self.quote, 'chunk_type': 'text'}]
+        self.rows = [{'id': 909, 'title': 'Report.pdf (p.12)', 'content': self.quote + ' Water stewardship also includes ongoing watershed assessment and community engagement.', 'chunk_type': 'text'}]
         self.query = 'Explain water stewardship'
 
     def test_whole_source_sentence_preserves_negation_and_provenance(self):
@@ -164,6 +164,30 @@ class TestSourceExcerpts(unittest.TestCase):
         self.assertEqual(bad.call_count, 2)
         self.assertEqual(result['status'], 'qualitative_claim_rejected')
         self.assertNotIn('Invented', result['answer'])
+
+    def test_named_framework_version_is_not_a_quantity_waiver(self):
+        from grounded_narrative import excerpt_has_quantity
+        self.assertFalse(excerpt_has_quantity('VWBA 2.0 supports water stewardship guidance.'))
+        self.assertTrue(excerpt_has_quantity('VWBA 2.0 replenished 45 million cubic meters.'))
+        self.assertTrue(excerpt_has_quantity('Water consumption was 2.0 million cubic meters.'))
+
+    def test_compact_selection_only_accepts_exact_known_labels(self):
+        result = generate_grounded_narrative(self.query, self.rows, 'en', Mock(return_value='909:0'))
+        self.assertEqual(result['status'], 'source_excerpt')
+        bracket = generate_grounded_narrative(self.query, self.rows, 'en', Mock(return_value='[909:0]'))
+        self.assertEqual(bracket['status'], 'source_excerpt')
+        for raw in ['[909:0] altered quotation', '909:0 with explanation', '909:0,909:0', '910:0']:
+            result = generate_grounded_narrative(self.query, self.rows, 'en', Mock(return_value=raw))
+            self.assertEqual(result['status'], 'qualitative_claim_rejected')
+
+    def test_unique_source_candidate_needs_no_model_generation(self):
+        model = Mock(side_effect=AssertionError('Unique evidence must bind directly'))
+        row = dict(self.rows[0], id=717, content=self.quote)
+        result = generate_grounded_narrative(self.query, [row], 'en', model)
+        self.assertEqual(result['selection'], 'unique_source_sentence')
+        self.assertEqual(result['references'][0]['evidence_id'], 717)
+        self.assertIn(self.quote, result['answer'])
+        model.assert_not_called()
 
 
 

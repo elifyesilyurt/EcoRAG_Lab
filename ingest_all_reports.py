@@ -291,6 +291,46 @@ def fix_reversed_chart_text(text: str) -> str:
     return text
 
 
+def extract_reading_blocks(page):
+    """Detect sustained whitespace gutters and read each column independently.
+
+    Geometry comes from this page, never a report/page-specific coordinate map.
+    Full-width headings/navigation are separate from body columns. Ambiguous
+    layouts retain the existing extraction rather than inventing reading order.
+    """
+    if not hasattr(page, 'extract_words') or not hasattr(page, 'crop'):
+        return [page.extract_text() or '']
+    width, height = float(page.width), float(page.height)
+    top = height * .15
+    words = [w for w in page.extract_words() if top <= w['top'] <= height * .94]
+    if len(words) < 80:
+        return [page.extract_text() or '']
+    occupied = [False] * (int(width) + 1)
+    for word in words:
+        for x in range(max(0, int(word['x0'])), min(len(occupied), int(word['x1']) + 1)):
+            occupied[x] = True
+    gaps, start = [], None
+    for x, used in enumerate(occupied):
+        if not used and start is None:
+            start = x
+        elif used and start is not None:
+            if x - start >= max(8, width * .008) and start > width * .1 and x < width * .9:
+                gaps.append((start + x) / 2)
+            start = None
+    if not 1 <= len(gaps) <= 3:
+        return [page.extract_text() or '']
+    edges = [0] + gaps + [width]
+    segments = [(edges[i], edges[i + 1]) for i in range(len(edges) - 1)]
+    for left, right in segments:
+        group = [w for w in words if left <= (w['x0'] + w['x1']) / 2 < right]
+        if right - left < width * .12 or len(group) < 25:
+            return [page.extract_text() or '']
+    blocks = [page.crop((0, 0, width, top)).extract_text() or '']
+    blocks.extend(page.crop((left, top, right, height)).extract_text() or ''
+                  for left, right in segments)
+    return blocks
+
+
 def process_pdf(pdf_path: str) -> List[Dict[str, Any]]:
     """Tek bir PDF dosyasını okur, tabloları ve gövde metinlerini hiyerarşik ve temiz olarak chunk'lara böler."""
     doc_title = os.path.basename(pdf_path)
@@ -328,17 +368,18 @@ def process_pdf(pdf_path: str) -> List[Dict[str, Any]]:
 
             # ── 2. Metin Çıkarımı + Navigasyon Temizliği ─────────────────────
             if raw_text:
-                cleaned = remove_nav_artifacts(raw_text)
+                reading_blocks = extract_reading_blocks(page)
+                cleaned = "\n\n".join(remove_nav_artifacts(block) for block in reading_blocks)
                 original_len = len(raw_text)
                 if len(cleaned) < original_len * 0.85:
                     nav_cleaned_count += 1
 
-                text_chunks = recursive_character_splitter(
-                    cleaned,
-                    chunk_size=TARGET_CHUNK_SIZE,
-                    chunk_overlap=CHUNK_OVERLAP,
-                    min_length=MIN_CHUNK_LENGTH
-                )
+                # Never combine two columns into one sentence/chunk.
+                text_chunks = []
+                for block in reading_blocks:
+                    text_chunks.extend(recursive_character_splitter(
+                        remove_nav_artifacts(block), chunk_size=TARGET_CHUNK_SIZE,
+                        chunk_overlap=CHUNK_OVERLAP, min_length=MIN_CHUNK_LENGTH))
 
                 for t_chunk in text_chunks:
                     formatted = format_chunk_with_metadata(

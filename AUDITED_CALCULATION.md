@@ -8,7 +8,7 @@ Explicit operation phrases in the human question override a contradictory model 
 
 An invalid schema/selection gets at most one repair attempt with the actual validation reason and no expected answer. Unavailable source data is not retried. There is no fallback to unchecked model-generated arithmetic. Results and their source operands are rendered directly, so another model cannot rewrite the computed number.
 
-Regression coverage includes independently transcribed source values, m3 and kWh conversions, percentages versus percentage points, numeric injection, wrong IDs/periods, missing/qualified values, duplicate references, dimensional mismatches, zero denominators, contractual versus realized basis, scope notes and bounded repair. 174 offline checks pass; the 20 calculation tests are distinct from actual model-answer checks.
+Regression coverage includes independently transcribed source values, m3 and kWh conversions, percentages versus percentage points, numeric injection, wrong IDs/periods, missing/qualified values, duplicate references, dimensional mismatches, zero denominators, contractual versus realized basis, scope notes and bounded repair. 180 offline checks pass; the 20 calculation tests are distinct from actual model-answer checks.
 
 The actual fixture set now has 24 questions. Nine arithmetic cases cover FY23/FY24/FY25 water, Turkish/English wording, FY24/FY25 waste ratios, FY25 electricity in kWh, exact historical contracted-removal growth and unavailable exact FY25 growth. Results are saved in the task outputs directory.
 

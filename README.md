@@ -24,7 +24,7 @@
 
 
 
-> Current development branch: `fix/ecorag-reliability`. 174 offline tests pass. The index includes three reports and the 2026 data fact sheet; the historical benchmark scores below have not been rerun against the rebuilt index. See [INGESTION_RELIABILITY.md](INGESTION_RELIABILITY.md) for source and rebuild checks.
+> Current development branch: `fix/ecorag-reliability`. 180 offline tests pass. The index includes three reports and the 2026 data fact sheet; the historical benchmark scores below have not been rerun against the rebuilt index. See [INGESTION_RELIABILITY.md](INGESTION_RELIABILITY.md) for source and rebuild checks.
 
 ## 📸 Visual Showcase & User Interface
 
@@ -271,7 +271,7 @@ python generate_and_run_500_benchmark.py
 ├── benchmark_500_dataset.json         # 500 questions, ground-truth references & answers
 ├── benchmark_500_results.json         # Detailed latency, faithfulness & execution logs
 ├── run_benchmarks.py                  # 50-question CLI benchmark suite
-├── rag_storage.db                     # SQLite vector database with 1600 indexed chunks
+├── rag_storage.db                     # SQLite vector database with 1590 indexed chunks
 ├── docs/                              # Official source Microsoft Sustainability PDF reports
 │   ├── 2026-Microsoft-Environmental-Sustainability-Report-PDF.pdf
 │   ├── Microsoft_2025_Sustainability_Report.pdf

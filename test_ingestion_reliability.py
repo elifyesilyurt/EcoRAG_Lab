@@ -261,6 +261,8 @@ class TestIngestionOrchestration(IndexFixture, unittest.TestCase):
 class TestPdfProcessing(unittest.TestCase):
     def fake_pdf(self, text='', tables=None):
         page = unittest.mock.Mock()
+        page.width, page.height = 600, 800
+        page.extract_words.return_value = []
         page.extract_text.return_value = text
         page.extract_tables.return_value = tables or []
         pdf = unittest.mock.MagicMock()
@@ -346,6 +348,35 @@ class TestAuditedSources(unittest.TestCase):
         for title in (FACT_SHEET, REPORT):
             with self.assertRaises(ValueError):
                 ingestion.audited_source_chunks(title, 'f' * 64)
+
+class TestColumnReadingOrder(unittest.TestCase):
+    def test_real_policy_page_preserves_independent_column_sentences(self):
+        import pdfplumber
+        with pdfplumber.open(ROOT / 'docs/Microsoft_2025_Sustainability_Report.pdf') as pdf:
+            blocks = ingestion.extract_reading_blocks(pdf.pages[81])
+        self.assertEqual(len(blocks), 5)
+        left = ' '.join(blocks[1].split())
+        self.assertIn('market for renewable power purchase agreements (PPAs)', left)
+        self.assertNotIn('insights for informed policy decisions', left)
+        self.assertIn('insights for informed policy decisions', ' '.join(blocks[3].split()))
+
+    def test_real_water_page_keeps_replenishment_columns_distinct(self):
+        import pdfplumber
+        with pdfplumber.open(ROOT / 'docs/Microsoft_2024_Sustainability_Report.pdf') as pdf:
+            blocks = ingestion.extract_reading_blocks(pdf.pages[31])
+        self.assertEqual(len(blocks), 5)
+        second = ' '.join(blocks[2].split())
+        self.assertIn('water stewardship activities', second)
+        self.assertNotIn('Microsoft Cloud for Sustainability', second)
+
+    def test_small_or_unsupported_layout_retains_original_extraction(self):
+        from types import SimpleNamespace
+        page = SimpleNamespace(extract_text=lambda: 'Original single-column text')
+        self.assertEqual(ingestion.extract_reading_blocks(page), ['Original single-column text'])
+        page = SimpleNamespace(width=600, height=800, extract_words=list, crop=lambda _: None,
+                               extract_text=lambda: 'Original sparse text')
+        self.assertEqual(ingestion.extract_reading_blocks(page), ['Original sparse text'])
+
 
 
 if __name__ == '__main__':

@@ -1,0 +1,15 @@
+# Column-aware narrative extraction
+
+Root cause: page-wide text extraction reads words from independent PDF columns across the same horizontal row. A renewable-power sentence was joined to unrelated AI-policy and energy-data sentences, and water-management paragraphs were interleaved across columns. A source ID alone cannot make such mixed text a faithful quotation.
+
+The parser now detects sustained horizontal whitespace gutters from word geometry in the page body, then extracts each column separately. It requires enough words, one to three internal gutters and sufficiently wide/populated bands. Navigation/full-width headings are separated. Narrative splitting runs independently for each block; columns are never joined into one sentence/chunk. Sparse or ambiguous layouts keep the prior extraction. The policy uses page geometry rather than filename/page-specific coordinates.
+
+The index version changes to `column-row-evidence-v2`, requiring a rebuild before app search can use it. Rebuild publication remains transactional; source hashes and all audited numeric row providers are preserved. Audited tables continue to supply numeric answers independently of narrative layout.
+
+Checks use real source pages: the 2025 report policy page 82 and the 2024 report water page 32, visually compared with the PDF render. The procurement sentence and separate AI-policy sentence must remain in different blocks; water stewardship text must not absorb the Microsoft Cloud paragraph from another column. Sparse/unsupported layouts retain their original extraction.
+
+Limitations: this is a conservative gutter detector, not a general document-layout/OCR engine. Complex mixed-width layouts and undetected columns remain possible. Source excerpts still require valid complete sentence references; no generative prose bypasses the gate. Substantive answer coverage must be assessed separately from safe refusal.
+
+Rebuild: 1,590 indexed chunks and 44 audited rows. 180 offline regressions passed; actual AppTest startup/four chat flows passed against the rebuilt index. Numeric providers/source manifest parity is unchanged. The first qualitative run found eligible evidence but Phi produced invalid JSON. Production selection is now compact comma-separated evidence:sentence labels with the same exact-reference checks; legacy strict JSON remains accepted for compatibility tests. Named uppercase framework versions such as VWBA 2.0 are exempted only during source-excerpt eligibility, never measured quantities or generated prose.
+
+Final component run: both previously withheld qualitative questions passed after column extraction and unique-candidate binding. A single eligible complete source sentence binds directly with validated provenance, independent of source IDs/question fixtures. Multiple candidates still use bounded validated selection and may abstain. The separate three water/waste/packaging regression scenarios passed; five actual AppTest startup/widget checks passed. These are not two newly correct generative-model answers.

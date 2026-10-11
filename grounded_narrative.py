@@ -70,6 +70,13 @@ def source_narrative(query, chunks, lang):
     return {'status': 'source_bound', 'answer': '\n\n'.join(dict.fromkeys(lines)), 'references': references}
 
 
+def excerpt_has_quantity(text):
+    # A named framework version is not a measured ESG quantity. The original
+    # full source sentence is still rendered; only eligibility ignores this token.
+    without_versions = re.sub(r'\b[A-Z][A-Z0-9-]{2,}\s+(?:v)?\d+\.\d+\b', '', text)
+    return has_numeric_claim(without_versions)
+
+
 def excerpt_catalog(query, chunks):
     """Only whole source sentences, without unverified numeric claims."""
     if requested_fiscal_years(query) or requested_calendar_years(query):
@@ -87,7 +94,7 @@ def excerpt_catalog(query, chunks):
         sentences = re.split(r'(?<=[.!?])\s+', body)
         for index, sentence in enumerate(sentences):
             sentence = sentence.strip()
-            if (len(sentence) < 35 or len(sentence) > 1200 or has_numeric_claim(sentence)
+            if (len(sentence) < 35 or len(sentence) > 1200 or excerpt_has_quantity(sentence)
                     or not sentence[0].isupper() or sentence[-1] not in '.!?'
                     or sentence.startswith(('Metric:', 'Basis:', '[', 'Header:'))):
                 continue
@@ -100,7 +107,11 @@ def excerpt_catalog(query, chunks):
 
 def validate_excerpt_selection(raw, catalog, lang):
     try:
-        selected = json.loads(raw) if isinstance(raw, str) else raw
+        if isinstance(raw, str) and re.fullmatch(r'\s*(?:\d+:\d+|\[\d+:\d+\])(?:\s*,\s*(?:\d+:\d+|\[\d+:\d+\])){0,4}\s*', raw):
+            selected = {'references': [{'evidence_id': int(key), 'sentence_index': int(index)}
+                                       for key, index in re.findall(r'(\d+):(\d+)', raw)]}
+        else:
+            selected = json.loads(raw) if isinstance(raw, str) else raw
         if not isinstance(selected, dict) or set(selected) != {'references'}:
             raise ValueError('Only source references are permitted')
         refs = selected['references']
@@ -132,18 +143,24 @@ def generate_grounded_narrative(query, chunks, lang, model):
     catalog = excerpt_catalog(query, chunks)
     if not catalog:
         return {'status': 'unavailable', 'answer': unavailable(lang), 'references': []}
-    system = ('Select complete source sentences relevant to the question. Return only JSON: '
-              '{"references": [{"evidence_id": 1, "sentence_index": 0}]}. '
-              'Use actual catalog IDs. Select up to five sentences. Do not write an answer, '
-              'rewrite a quotation, omit negation, or add explanations. If unsupported, return {"references": []}.')
-    prompt = json.dumps(catalog, ensure_ascii=False) + '\nQuestion: ' + query
+    if len(catalog) == 1:
+        row = catalog[0]
+        result = validate_excerpt_selection({'references': [{'evidence_id': row['evidence_id'],
+                                                              'sentence_index': row['sentence_index']}]}, catalog, lang)
+        result['selection'] = 'unique_source_sentence'
+        return result
+    system = ('Select complete source sentences relevant to the question. Return ONLY their labels, '
+              'comma-separated, like 123:0,456:2. Use actual labels. Select up to five. '
+              'Do not return JSON, quotations, explanations or additional fields. Return NONE if unsupported.')
+    prompt = '\n\n'.join(f"{r['evidence_id']}:{r['sentence_index']} — {r['text']}" for r in catalog)
+    prompt += '\nQuestion: ' + query
     attempts = []
     for _ in range(2):
-        draft = model(system, prompt, temperature=.1, max_tokens=512, preserve_format=True)
+        draft = model(system, prompt, temperature=.1, max_tokens=96, preserve_format=True)
         result = validate_excerpt_selection(draft, catalog, lang)
         attempts.append({'draft': draft, 'status': result['status']})
         if result['status'] == 'source_excerpt':
             break
-        prompt += '\nThe selection was invalid or empty. Return only the required JSON references to actual catalog sentences, or an empty references list if none support the question. No prose or additional brackets.'
+        prompt += '\nThe selection was invalid or empty. Return ONLY comma-separated actual labels (e.g. 123:0), or NONE. No JSON, prose or brackets.'
     result['attempts'] = attempts
     return result
