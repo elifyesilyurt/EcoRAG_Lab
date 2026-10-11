@@ -24,7 +24,7 @@
 
 
 
-> Current development branch: `fix/ecorag-reliability`. 180 offline tests pass. The index includes three reports and the 2026 data fact sheet; the historical benchmark scores below have not been rerun against the rebuilt index. See [INGESTION_RELIABILITY.md](INGESTION_RELIABILITY.md) for source and rebuild checks.
+> Current development branch: `fix/ecorag-reliability`. 187 offline tests pass. The index includes three reports and the 2026 data fact sheet; the historical benchmark scores below have not been rerun against the rebuilt index. See [INGESTION_RELIABILITY.md](INGESTION_RELIABILITY.md) for source and rebuild checks.
 
 ## 📸 Visual Showcase & User Interface
 
@@ -122,7 +122,7 @@ graph TD
 ## ⚙️ 2. Design Rationale & Engineering Decisions
 
 ### A. `TARGET_CHUNK_SIZE = 900` Characters
-* **Context Budget Balance:** 900 characters (~180–220 tokens) maximizes semantic density within `nomic-embed-text-v1.5`'s embedding space without information loss.
+* **Context Budget Balance:** 900 characters (~187–220 tokens) maximizes semantic density within `nomic-embed-text-v1.5`'s embedding space without information loss.
 * **SLM Attention Preservation:** When retrieving Top-6 chunks, total context remains strictly ~1,200–1,400 tokens, preventing "Lost in the Middle" attention degradation in `phi-4-mini` and maintaining 1–2 second local generation latency.
 * **Table Integrity:** 900 characters accommodates 4–6 column ESG tables with headers in a single self-contained chunk, preventing orphaned rows.
 
@@ -249,7 +249,7 @@ python generate_and_run_500_benchmark.py
 |---|---|---|---|---|---|---|
 | 🟢 **1. Factual / Retrieval Accuracy (%40)** | 200 | 173 | **86.50%** | **0.00%** | 0.6575 | Asymmetric Hybrid Vector RAG |
 | 🟡 **2. Quantitative, Trend & PAL Math (%20)** | 100 | 100 | **100.00%** | **0.00%** | 1.0000 | Deterministic PAL Engine |
-| 🟣 **3. Cross-Document Reasoning (%20)** | 100 | 90 | **90.00%** | **0.00%** | 0.6180 | Year-Stratified Multi-RAG |
+| 🟣 **3. Cross-Document Reasoning (%20)** | 100 | 90 | **90.00%** | **0.00%** | 0.6187 | Year-Stratified Multi-RAG |
 | 🔴 **4. Adversarial / Negative Rejection (%10)** | 50 | 50 | **100.00%** | **0.00%** | 1.0000 | Zero-Hallucination Safe Guardrail |
 | 🔵 **5. Language, Format & Edge-Cases (%10)** | 50 | 43 | **86.00%** | **0.00%** | 0.7424 | Unicode NFD & Footnote Handler |
 | **🏆 System-Wide Overall Score** | **500 Questions** | **456** | **91.20% Accuracy** | **0.00% Hallucination** | **0.7471** | **Zero False Information Produced** |

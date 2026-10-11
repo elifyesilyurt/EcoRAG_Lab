@@ -15,6 +15,7 @@ def main():
         ('waste-source', 'What is the FY25 total operational waste generated in metric tons?', ['58868']),
         ('water-calculation', 'Calculate FY25 water withdrawal minus consumption in cubic meters.', ['5096000']),
         ('calendar-packaging', 'What is CY2025 single-use plastics in primary product packaging percentage?', ['0.07']),
+        ('multi-source-narrative', 'Describe renewable electricity policy and grid planning.', ['source excerpts|Kaynakta yer alan']),
         ('ambiguous-year', '2025 packaging percentage?', ['fiscal|mali']),
     ]
     app.run()
@@ -36,11 +37,16 @@ def main():
                 errors = [e.message for e in app.exception]
                 passed = (not errors and len(messages) >= before + 2 and answer.get('role') == 'assistant'
                           and all(any(variant.lower() in answer.get('content', '').lower() for variant in term.split('|')) for term in required))
+                if name == 'multi-source-narrative':
+                    validation = answer.get('narrative_validation') or {}
+                    refs = {ref['evidence_id'] for ref in validation.get('references', [])}
+                    provenance = {chunk['id'] for chunk in answer.get('provenance', [])}
+                    passed = passed and validation.get('status') == 'source_excerpt' and bool(refs) and refs == provenance
                 if name == 'calendar-packaging':
                     passed = passed and answer.get('intent') == 'general_rag'
                 records.append({'case': name, 'query': query, 'passed': passed,
                                 'answer': answer.get('content', ''), 'route': answer.get('route'),
-                                'intent': answer.get('intent'), 'errors': errors})
+                                'intent': answer.get('intent'), 'grounding': answer.get('narrative_validation'), 'errors': errors})
             except Exception as exc:
                 import traceback
                 traceback.print_exc()

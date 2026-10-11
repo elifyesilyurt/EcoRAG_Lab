@@ -771,7 +771,7 @@ def search_context_hybrid(query: str, year_filter: Optional[str] = None, scope_q
         return ''.join(c for c in unicodedata.normalize('NFD', s.lower()) if unicodedata.category(c) != 'Mn')
 
     stopwords = {"which", "what", "where", "when", "that", "this", "from", "into", "over", "with", "across", "like", "does", "have", "been", "according", "nelerdir", "nedir", "neler", "hangi", "hangisi", "kadar", "olan", "icin", "göre", "gore"}
-    clean_q = re.sub(r'[^a-zA-Z0-9\s]', ' ', query)
+    clean_q = re.sub(r'[^a-zA-Z0-9\s]', ' ', normalize_str(query).replace('ı', 'i'))
     raw_keywords = [normalize_str(w) for w in clean_q.split() if len(w) > 2 and w.lower() not in stopwords]
 
     tr_to_en = {
@@ -785,6 +785,12 @@ def search_context_hybrid(query: str, year_filter: Optional[str] = None, scope_q
     for kw in raw_keywords:
         if kw in tr_to_en:
             keywords.append(tr_to_en[kw])
+
+    # Share canonical concept tokens with audited/narrative source selection.
+    # Normalize Turkish characters before tokenization; repeated aliases score once.
+    from audited_math import metric_tokens
+    keywords = sorted(set(keywords) | {word for word in metric_tokens(query)
+                                       if len(word) > 2 and word not in stopwords})
 
     scores = []
     for r in rows:
@@ -2869,6 +2875,7 @@ with tab_chat:
                 start_time = time.time()
                 try:
                     calc_details = None
+                    narrative = None
                     chunks = []
                     max_score = 0.0
                     route_type = "rag"
@@ -3012,6 +3019,9 @@ with tab_chat:
                                 show_live_status(status_placeholder, "✍️ Yanıt oluşturuluyor..." if target_lang == "tr" else "✍️ Generating response...")
 
                                 narrative = generate_grounded_narrative(query_to_run, chunks, target_lang, query_foundry)
+                                used_ids = {ref["evidence_id"] for ref in narrative.get("references", [])}
+                                if used_ids:
+                                    chunks = [chunk for chunk in chunks if chunk["id"] in used_ids]
                                 stream_gen = stream_static_text(narrative["answer"])
 
                     # Akışı başlat — status mesajı ilk token gelene kadar görünür kalır
@@ -3054,6 +3064,9 @@ with tab_chat:
                         "intent": intent,
                         "calc_details": calc_details,
                         "provenance": chunks,
+                        "narrative_validation": ({key: narrative[key] for key in
+                            ("status", "selection", "references", "candidate_count", "coverage") if key in narrative}
+                            if narrative is not None else None),
                         "insight": insight,
                         "max_score": max_score,
                         "latency": latency

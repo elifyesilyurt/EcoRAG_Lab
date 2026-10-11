@@ -108,12 +108,13 @@ class TestSourceExcerpts(unittest.TestCase):
         self.assertEqual(result['status'], 'source_excerpt')
         self.assertIn(self.quote, result['answer'])
         self.assertIn('Report.pdf (p.12)', result['answer'])
-        self.assertTrue(model.call_args.kwargs['preserve_format'])
+        model.assert_not_called()
 
     def test_model_cannot_rewrite_or_add_unquoted_claims(self):
         for raw in ['Water stewardship is complete.', '{"references":[],"answer":"all watersheds succeeded"}',
                     '{"references":[{"evidence_id":909,"sentence_index":0,"text":"success"}]}']:
-            result = generate_grounded_narrative(self.query, self.rows, 'en', Mock(return_value=raw))
+            from grounded_narrative import excerpt_catalog, validate_excerpt_selection
+            result = validate_excerpt_selection(raw, excerpt_catalog(self.query, self.rows), 'en')
             self.assertEqual(result['status'], 'qualitative_claim_rejected')
             self.assertNotIn('success', result['answer'])
 
@@ -153,17 +154,13 @@ class TestSourceExcerpts(unittest.TestCase):
         for content in ['Water stewardship ' * 100, '[VISUAL DATA FRAGMENT] Water stewardship is discussed in this graph.']:
             self.assertEqual(excerpt_catalog(self.query, [dict(self.rows[0], content=content)]), [])
 
-    def test_invalid_selector_has_only_one_repair_and_no_unchecked_fallback(self):
-        good = '{"references":[{"evidence_id":909,"sentence_index":0}]}'
-        model = Mock(side_effect=['Unsupported free prose.', good])
+    def test_multiple_candidates_do_not_depend_on_model_generation(self):
+        model = Mock(side_effect=AssertionError('Do not generate or select source IDs'))
         result = generate_grounded_narrative(self.query, self.rows, 'en', model)
         self.assertEqual(result['status'], 'source_excerpt')
-        self.assertEqual(model.call_count, 2)
-        bad = Mock(return_value='Invented explanation.')
-        result = generate_grounded_narrative(self.query, self.rows, 'en', bad)
-        self.assertEqual(bad.call_count, 2)
-        self.assertEqual(result['status'], 'qualitative_claim_rejected')
-        self.assertNotIn('Invented', result['answer'])
+        self.assertEqual(result['selection'], 'ranked_source_sentences')
+        self.assertEqual(len(result['references']), 2)
+        model.assert_not_called()
 
     def test_named_framework_version_is_not_a_quantity_waiver(self):
         from grounded_narrative import excerpt_has_quantity
@@ -177,7 +174,8 @@ class TestSourceExcerpts(unittest.TestCase):
         bracket = generate_grounded_narrative(self.query, self.rows, 'en', Mock(return_value='[909:0]'))
         self.assertEqual(bracket['status'], 'source_excerpt')
         for raw in ['[909:0] altered quotation', '909:0 with explanation', '909:0,909:0', '910:0']:
-            result = generate_grounded_narrative(self.query, self.rows, 'en', Mock(return_value=raw))
+            from grounded_narrative import excerpt_catalog, validate_excerpt_selection
+            result = validate_excerpt_selection(raw, excerpt_catalog(self.query, self.rows), 'en')
             self.assertEqual(result['status'], 'qualitative_claim_rejected')
 
     def test_unique_source_candidate_needs_no_model_generation(self):
@@ -187,6 +185,48 @@ class TestSourceExcerpts(unittest.TestCase):
         self.assertEqual(result['selection'], 'unique_source_sentence')
         self.assertEqual(result['references'][0]['evidence_id'], 717)
         self.assertIn(self.quote, result['answer'])
+        model.assert_not_called()
+
+
+class TestExcerptRanking(unittest.TestCase):
+    def row(self, key, text):
+        return {'id':key, 'content':text, 'title':'Source.pdf (p.3)', 'chunk_type':'text'}
+
+    def test_more_question_concepts_rank_above_generic_overlap(self):
+        rows = [self.row(1, 'Water replenishment is discussed through regional planning activities.'),
+                self.row(900, 'Water replenishment partnerships support community watershed restoration projects.')]
+        result = generate_grounded_narrative('Explain water replenishment community partnerships.', rows, 'en', Mock())
+        self.assertEqual(result['references'][0]['evidence_id'], 900)
+
+    def test_duplicate_sentences_do_not_consume_selection_budget(self):
+        quote = 'Water replenishment partnerships support community watershed restoration projects.'
+        rows = [self.row(i, quote) for i in range(10)]
+        result = generate_grounded_narrative('Explain water replenishment partnerships.', rows, 'en', Mock())
+        self.assertEqual(len(result['references']), 1)
+        self.assertEqual(result['answer'].count(quote), 1)
+
+    def test_negation_is_not_removed_by_deduplication(self):
+        rows = [self.row(1, 'Water replenishment partnerships have achieved the local restoration goals.'),
+                self.row(2, 'Water replenishment partnerships have not achieved the local restoration goals.')]
+        result = generate_grounded_narrative('Explain water replenishment partnerships.', rows, 'en', Mock())
+        self.assertEqual(len(result['references']), 2)
+        self.assertIn('have not achieved', result['answer'])
+
+    def test_changed_ids_and_input_order_do_not_change_relevance_order(self):
+        from grounded_narrative import excerpt_catalog, rank_source_excerpts
+        rows = [self.row(1, 'Water replenishment is discussed through regional planning activities.'),
+                self.row(2, 'Water replenishment partnerships support community watershed restoration projects.')]
+        query = 'Explain water replenishment community partnerships.'
+        before = [r['text'] for r in rank_source_excerpts(query, excerpt_catalog(query, rows))]
+        after = [r['text'] for r in rank_source_excerpts(query, excerpt_catalog(query, [dict(rows[1],id=999),dict(rows[0],id=888)]))]
+        self.assertEqual(before, after)
+
+    def test_turkish_concepts_use_same_source_ranking_without_model(self):
+        rows = [self.row(1, 'Water replenishment partnerships support community watershed restoration projects.')]
+        model = Mock(side_effect=AssertionError('No model required'))
+        result = generate_grounded_narrative('Su yenileme ortaklıkları ve topluluk yaklaşımını açıkla.', rows, 'tr', model)
+        self.assertEqual(result['status'], 'source_excerpt')
+        self.assertIn('Kaynakta', result['answer'])
         model.assert_not_called()
 
 

@@ -22,7 +22,7 @@
 ---
 
 
-> Güncel çalışma branch’i: `fix/ecorag-reliability`. 180 çevrimdışı test geçmektedir. İndeks üç rapor ve 2026 veri föyünden oluşur; aşağıdaki eski benchmark skorları yeni indeksle henüz tekrar ölçülmemiştir. Kaynak ve yeniden indeksleme kontrolleri için [INGESTION_RELIABILITY.md](INGESTION_RELIABILITY.md) dosyasına bakın.
+> Güncel çalışma branch’i: `fix/ecorag-reliability`. 187 çevrimdışı test geçmektedir. İndeks üç rapor ve 2026 veri föyünden oluşur; aşağıdaki eski benchmark skorları yeni indeksle henüz tekrar ölçülmemiştir. Kaynak ve yeniden indeksleme kontrolleri için [INGESTION_RELIABILITY.md](INGESTION_RELIABILITY.md) dosyasına bakın.
 
 ## 🎥 Canlı Video Demosu (YouTube)
 
@@ -134,7 +134,7 @@ graph TD
 ## ⚙️ 2. Tasarım Kararları ve Mühendislik Rasyoneli (Design Rationale)
 
 ### A. `TARGET_CHUNK_SIZE = 900` Karakter
-* **Bağlam Bütçesi Dengesi:** 900 karakter (~180–220 belirteç), `nomic-embed-text-v1.5` modelinin 768 boyutlu uzayda bilgi kaybı yaşamadan en yüksek semantik yoğunluğa ulaşmasını sağlar.
+* **Bağlam Bütçesi Dengesi:** 900 karakter (~187–220 belirteç), `nomic-embed-text-v1.5` modelinin 768 boyutlu uzayda bilgi kaybı yaşamadan en yüksek semantik yoğunluğa ulaşmasını sağlar.
 * **SLM Bellek Uyumu:** `phi-4-mini` modeline Top-6 chunk gönderildiğinde toplam bağlam ~1.200–1.400 token civarında kalır. Bu, modelin dikkat (attention) mekanizmasının dağılmasını ("Lost in the Middle") önler ve çıkarım gecikmesini 1–2 saniye bandında tutar.
 * **Tablo Bütünlüğü:** 900 karakterlik pencere, ortalama 4–6 sütunlu bir ESG tablosunun başlık satırlarıyla birlikte tek bir chunk içine sığmasını garantiler; satırların havada kalmasını önler.
 
@@ -261,7 +261,7 @@ python generate_and_run_500_benchmark.py
 |---|---|---|---|---|---|---|
 | 🟢 **1. Olgusal Doğruluk (Factual Retrieval - %40)** | 200 | 173 | **%86.50** | **%0.00** | 0.6575 | Asimetrik Hibrit Vektör RAG |
 | 🟡 **2. Sayısal, Trend & PAL Matematik (%20)** | 100 | 100 | **%100.00** | **%0.00** | 1.0000 | PAL Deterministik Motoru |
-| 🟣 **3. Çapraz Atıf & Karşılaştırma (%20)** | 100 | 90 | **%90.00** | **%0.00** | 0.6180 | Year-Stratified Çok Yıllı Sentez |
+| 🟣 **3. Çapraz Atıf & Karşılaştırma (%20)** | 100 | 90 | **%90.00** | **%0.00** | 0.6187 | Year-Stratified Çok Yıllı Sentez |
 | 🔴 **4. Adversarial / Negatif Ret (%10)** | 50 | 50 | **%100.00** | **%0.00** | 1.0000 | Sıfır Halüsinasyon Kalkanı |
 | 🔵 **5. Dil, Format & Edge-Case (%10)** | 50 | 43 | **%86.00** | **%0.00** | 0.7424 | Unicode NFD & Dipnot Modülü |
 | **🏆 Sistem Geneli Toplam Skor** | **500 Soru** | **456** | **%91.20 Doğruluk** | **%0.00 Halüsinasyon** | **0.7471** | **Sıfır Hatalı/Uydurma Veri Üretimi** |

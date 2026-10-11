@@ -136,6 +136,30 @@ def validate_excerpt_selection(raw, catalog, lang):
         return {'status': 'qualitative_claim_rejected', 'answer': unavailable(lang), 'references': []}
 
 
+def rank_source_excerpts(query, catalog, limit=3):
+    """Rank literal evidence by concept coverage; never synthesize a claim.
+
+    Duplicate extracted sentences must not consume the answer budget. Stable
+    text/source ordering prevents changing source IDs from changing relevance.
+    """
+    ignored = {'the', 'and', 'of', 'to', 'in', 'for', 'a', 'an', 'is', 'what', 'how', 'does',
+               'microsoft', 'explain', 'describe', 'strategy', 'approach', 'its',
+               'acikla', 'strateji', 'stratejisi', 'politika', 'nasil', 'nedir', 've'}
+    wanted = set(metric_tokens(query)) - ignored
+    ranked = sorted(catalog, key=lambda row: (
+        -len(wanted & set(metric_tokens(row['text']))), row['text'].casefold(), row['source']))
+    seen, selected = set(), []
+    for row in ranked:
+        signature = ' '.join(row['text'].casefold().split())
+        if signature in seen:
+            continue
+        seen.add(signature)
+        selected.append(row)
+        if len(selected) >= limit:
+            break
+    return selected
+
+
 def generate_grounded_narrative(query, chunks, lang, model):
     direct = source_narrative(query, chunks, lang)
     if direct is not None:
@@ -143,24 +167,12 @@ def generate_grounded_narrative(query, chunks, lang, model):
     catalog = excerpt_catalog(query, chunks)
     if not catalog:
         return {'status': 'unavailable', 'answer': unavailable(lang), 'references': []}
-    if len(catalog) == 1:
-        row = catalog[0]
-        result = validate_excerpt_selection({'references': [{'evidence_id': row['evidence_id'],
-                                                              'sentence_index': row['sentence_index']}]}, catalog, lang)
-        result['selection'] = 'unique_source_sentence'
-        return result
-    system = ('Select complete source sentences relevant to the question. Return ONLY their labels, '
-              'comma-separated, like 123:0,456:2. Use actual labels. Select up to five. '
-              'Do not return JSON, quotations, explanations or additional fields. Return NONE if unsupported.')
-    prompt = '\n\n'.join(f"{r['evidence_id']}:{r['sentence_index']} — {r['text']}" for r in catalog)
-    prompt += '\nQuestion: ' + query
-    attempts = []
-    for _ in range(2):
-        draft = model(system, prompt, temperature=.1, max_tokens=96, preserve_format=True)
-        result = validate_excerpt_selection(draft, catalog, lang)
-        attempts.append({'draft': draft, 'status': result['status']})
-        if result['status'] == 'source_excerpt':
-            break
-        prompt += '\nThe selection was invalid or empty. Return ONLY comma-separated actual labels (e.g. 123:0), or NONE. No JSON, prose or brackets.'
-    result['attempts'] = attempts
+    chosen = rank_source_excerpts(query, catalog)
+    refs = [{'evidence_id': row['evidence_id'], 'sentence_index': row['sentence_index']} for row in chosen]
+    result = validate_excerpt_selection({'references': refs}, catalog, lang)
+    result['selection'] = 'unique_source_sentence' if len(catalog) == 1 else 'ranked_source_sentences'
+    result['candidate_count'] = len(catalog)
+    result['coverage'] = 'source_excerpts_only'
+    # The callable remains in the shared interface for backward compatibility.
+    # Ranking needs no generated answer or model-owned source IDs.
     return result

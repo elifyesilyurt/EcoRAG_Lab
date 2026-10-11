@@ -239,5 +239,101 @@
         "source excerpts"
       ]
     ]
+  },
+  {
+    "id": "multi-water-partnerships",
+    "query": "Explain water replenishment partnerships.",
+    "lang": "en",
+    "mode": "narrative",
+    "required_groups": [
+      [
+        "source excerpts",
+        "Kaynakta yer alan"
+      ]
+    ]
+  },
+  {
+    "id": "multi-water-community",
+    "query": "Describe water replenishment and community projects.",
+    "lang": "en",
+    "mode": "narrative",
+    "required_groups": [
+      [
+        "source excerpts",
+        "Kaynakta yer alan"
+      ]
+    ]
+  },
+  {
+    "id": "multi-electricity-grid",
+    "query": "Describe renewable electricity policy and grid planning.",
+    "lang": "en",
+    "mode": "narrative",
+    "required_groups": [
+      [
+        "source excerpts",
+        "Kaynakta yer alan"
+      ]
+    ]
+  },
+  {
+    "id": "multi-carbon-free-policy",
+    "query": "Explain carbon-free electricity policy advocacy.",
+    "lang": "en",
+    "mode": "narrative",
+    "required_groups": [
+      [
+        "source excerpts",
+        "Kaynakta yer alan"
+      ]
+    ]
+  },
+  {
+    "id": "multi-water-tr",
+    "query": "Su yenileme ortaklıkları ve topluluk yaklaşımını açıkla.",
+    "lang": "tr",
+    "mode": "narrative",
+    "required_groups": [
+      [
+        "source excerpts",
+        "Kaynakta yer alan"
+      ]
+    ]
+  },
+  {
+    "id": "multi-energy-tr",
+    "query": "Yenilenebilir elektrik tedarik politikasını açıkla.",
+    "lang": "tr",
+    "mode": "narrative",
+    "required_groups": [
+      [
+        "source excerpts",
+        "Kaynakta yer alan"
+      ]
+    ]
+  },
+  {
+    "id": "missing-groundwater-scope",
+    "query": "Describe groundwater withdrawal in Madrid.",
+    "lang": "en",
+    "mode": "narrative",
+    "required_groups": [
+      [
+        "cannot be verified",
+        "doğrulayamıyorum"
+      ]
+    ]
+  },
+  {
+    "id": "missing-secondary-packaging",
+    "query": "Explain FY25 secondary packaging plastic percentage.",
+    "lang": "en",
+    "mode": "narrative",
+    "required_groups": [
+      [
+        "cannot be verified",
+        "doğrulayamıyorum"
+      ]
+    ]
   }
 ]

@@ -205,10 +205,13 @@ def metric_tokens(text):
                'sozles': 'contracted', 'giderim': 'removal', 'uzaklast': 'removal',
                'karbon': 'carbon', 'atik': 'waste', 'diver': 'diverted', 'yonlend': 'diverted',
                'generat': 'generated', 'uretil': 'generated', 'elektrik': 'electricity',
-               'operasyon': 'operational', 'plastic': 'plastics', 'packag': 'packaging', 'watershed': 'watershed', 'replenish': 'replenishment'}
+               'operasyon': 'operational', 'plastic': 'plastics', 'packag': 'packaging', 'watershed': 'watershed', 'replenish': 'replenishment', 'yenile': 'replenishment', 'havza': 'watershed',
+               'yenilenebilir': 'renewable', 'enerji': 'energy', 'tedarik': 'procurement',
+               'yonetim': 'stewardship', 'politik': 'policy', 'veriml': 'efficiency',
+               'sulama': 'irrigation', 'topluluk': 'community', 'ortaklik': 'partnership', 'partner': 'partnership'}
     tokens = []
     for word in re.findall(r'\w+', text):
-        mapped = next((target for stem, target in aliases.items()
+        mapped = next((target for stem, target in sorted(aliases.items(), key=lambda item: len(item[0]), reverse=True)
                        if (word == stem if stem == 'su' else word.startswith(stem))), word)
         tokens.append(mapped)
     return tokens

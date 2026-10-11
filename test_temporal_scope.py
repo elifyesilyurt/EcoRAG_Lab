@@ -161,6 +161,24 @@ class TestActualTemporalSearch(unittest.TestCase):
     def search(self, *args, **kwargs):
         return self.app['search_context_hybrid'](*args, **kwargs)[0]
 
+    def test_turkish_policy_concepts_rank_policy_above_quantity_table(self):
+        with sqlite3.connect(self.path) as conn:
+            conn.execute('DELETE FROM documents')
+            conn.executemany('INSERT INTO documents VALUES (?, ?, ?, ?, ?)', [
+                (71, '2026', 'Policy source', 'Renewable electricity procurement policy supports community projects.', json.dumps([1,0])),
+                (72, '2026', 'Quantity table', 'Electricity consumption by datacenter location.', json.dumps([1,0])),
+            ])
+        self.assertEqual(self.search('Yenilenebilir elektrik tedarik politikasını açıkla.')[0]['id'], 71)
+
+    def test_repeated_keywords_do_not_inflate_hybrid_score(self):
+        with sqlite3.connect(self.path) as conn:
+            conn.execute('DELETE FROM documents')
+            conn.execute('INSERT INTO documents VALUES (?, ?, ?, ?, ?)',
+                         (71, '2026', 'Policy source', 'Renewable electricity procurement policy.', json.dumps([1,0])))
+        single = self.search('renewable electricity policy')[0]['score']
+        repeated = self.search('renewable renewable electricity policy policy')[0]['score']
+        self.assertEqual(single, repeated)
+
     def test_one_matching_chunk_is_enough_without_other_year_fallback(self):
         chunks = self.search('2024 report water withdrawal')
         self.assertEqual([item['id'] for item in chunks], [1])
