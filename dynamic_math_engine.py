@@ -217,6 +217,9 @@ STRICT PROTOCOL:
 5. End with a finite numeric scalar answer, e.g. result = group1_total - group2_total.
 6. Use only single-name assignments and arithmetic expressions; no imports, prose, comparisons, or keyword arguments.
 7. Use positional arguments for functions, e.g. round(value, 2). Do not output booleans, strings, NaN, or infinity.
+8. Assign numbers only: x = 2.5 # million m3 is valid; x = 2.5 (million m3) is INVALID Python. Units belong in comments, never in executable expressions.
+9. Convert the final result into the unit explicitly requested by the question. For million m3 to m3 multiply by 1000000; ML to m3 multiply by 1000; MWh to kWh multiply by 1000. Do not confuse a change in percent with percentage-point change.
+10. Use descriptive variable names matching the metric. The final assignment MUST be result = your_formula. Do not copy numbers or metric names from the example unless present in the evidence.
 
 Example format:
 ```python

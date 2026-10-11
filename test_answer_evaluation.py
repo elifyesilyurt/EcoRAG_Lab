@@ -45,5 +45,25 @@ class TestAnswerEvaluation(unittest.TestCase):
         self.assertAlmostEqual(expected['waste-diversion-rate'], 36149 / 58868 * 100, places=2)
 
 
+class TestModelCodeFormatting(unittest.TestCase):
+    def test_math_response_preserves_newlines_without_prose_trimming(self):
+        import gc
+        from types import SimpleNamespace
+        from unittest.mock import Mock
+        from test_baseline_regressions import load_app_functions
+        code = '```python\na = 2 # source value in unit\nb = 3 # source value in unit\nresult = a + b\n```'
+        response = SimpleNamespace(status_code=200, json=lambda: {'choices': [{'message': {'content': code}}]})
+        session = Mock()
+        session.__enter__ = Mock(return_value=session)
+        session.__exit__ = Mock(return_value=False)
+        session.post.return_value = response
+        trim = Mock(side_effect=AssertionError('Code must not be prose-trimmed'))
+        app = load_app_functions({'query_foundry'}, {'get_foundry_base_url': lambda: 'http://local',
+                                 'MODEL_NAME': 'test', 'gc': gc, 'requests': SimpleNamespace(Session=lambda: session),
+                                 'trim_repetition': trim})
+        self.assertEqual(app['query_foundry']('system', 'question', preserve_format=True), code)
+        trim.assert_not_called()
+
+
 if __name__ == '__main__':
     unittest.main()

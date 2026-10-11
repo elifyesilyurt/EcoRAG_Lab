@@ -84,6 +84,7 @@ def main():
         save()
         print(report['error'], file=sys.stderr)
         return 2
+    save()
     import numpy as np
     from sentence_transformers import SentenceTransformer
     model = SentenceTransformer('nomic-ai/nomic-embed-text-v1.5', trust_remote_code=True)
@@ -116,7 +117,7 @@ def main():
                     prompt = (temporal_evidence_instruction(case['query']) + '\n\nContext:\n'
                               + build_evidence_context(chunks) + '\n\nQuestion: ' + case['query']
                               + '\n\nExecutable Python code:')
-                    raw = app['query_foundry'](POT_EXTRACTION_SYSTEM_PROMPT, prompt, temperature=0)
+                    raw = app['query_foundry'](POT_EXTRACTION_SYSTEM_PROMPT, prompt, temperature=0, preserve_format=True)
                     record.update(status='generated', raw_code=raw, math=DynamicMathExecutor.execute_code_lines(raw))
                 else:
                     system, prompt = build_rag_prompts(build_evidence_context(chunks), case['query'], case['lang'])

@@ -281,7 +281,7 @@ def trim_repetition(raw_text: str) -> str:
         return trimmed.strip()
     return raw_text.strip()
 
-def query_foundry(system_prompt: str, user_prompt: str, temperature: float = 0.15, max_tokens: int = 512) -> str:
+def query_foundry(system_prompt: str, user_prompt: str, temperature: float = 0.15, max_tokens: int = 512, preserve_format: bool = False) -> str:
     base_url = get_foundry_base_url()
     url = f"{base_url}/v1/chat/completions"
     headers = {
@@ -305,7 +305,7 @@ def query_foundry(system_prompt: str, user_prompt: str, temperature: float = 0.1
             res = session.post(url, headers=headers, json=payload, timeout=180)
             if res.status_code == 200:
                 raw_ans = res.json()["choices"][0]["message"]["content"].strip()
-                return trim_repetition(raw_ans)
+                return raw_ans if preserve_format else trim_repetition(raw_ans)
             else:
                 raise RuntimeError(f"HTTP {res.status_code}: {res.text}")
     except requests.exceptions.ConnectionError:
@@ -2972,7 +2972,7 @@ with tab_chat:
                             context_str = build_evidence_context(chunks)
                             pot_prompt = (f"{temporal_evidence_instruction(query_to_run)}\n\n"
                                           f"Context:\n{context_str}\n\nQuestion: {query_to_run}\n\nExecutable Python code:")
-                            code_raw = query_foundry(POT_EXTRACTION_SYSTEM_PROMPT, pot_prompt, temperature=0.0)
+                            code_raw = query_foundry(POT_EXTRACTION_SYSTEM_PROMPT, pot_prompt, temperature=0.0, preserve_format=True)
                             math_res = DynamicMathExecutor.execute_code_lines(code_raw)
 
                             calc_details, stream_gen = build_math_answer_response(
