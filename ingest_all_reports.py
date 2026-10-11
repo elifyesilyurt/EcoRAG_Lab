@@ -6,6 +6,7 @@ import sqlite3
 from typing import List, Dict, Any, Optional
 import pdfplumber
 from sentence_transformers import SentenceTransformer
+from esg_tables import get_verified_water_context
 
 DB_PATH = "rag_storage.db"
 EMBEDDING_MODEL_NAME = "nomic-ai/nomic-embed-text-v1.5"
@@ -364,18 +365,8 @@ def process_pdf(pdf_path: str) -> List[Dict[str, Any]]:
                 raw_text += table_p6
 
             if "2026" in doc_title and page_idx == 25:
-                table_p25 = (
-                    "\n\n### [VERIFIED TABLE] Microsoft FY20-FY25 Water Metrics (2026 Report p.25)\n"
-                    "| Fiscal Year | Total Water Withdrawals (Su Çekimi m³) | Total Water Consumption (Su Tüketimi m³) | Replenishment Volume (Su Yenileme m³) |\n"
-                    "|---|---|---|---|\n"
-                    "| FY20 | 6,794,000 m³ | 3,990,000 m³ | 746,937 m³ |\n"
-                    "| FY21 | 7,747,000 m³ | 4,794,000 m³ | 301,594 m³ |\n"
-                    "| FY22 | 8,698,000 m³ | 5,329,000 m³ | 1,453,536 m³ |\n"
-                    "| FY23 | 9,666,000 m³ | 5,818,000 m³ | 2,528,547 m³ |\n"
-                    "| FY24 | 11,589,000 m³ | 6,693,000 m³ | 6,610,656 m³ |\n"
-                    "| FY25 | 13,266,000 m³ | 8,170,000 m³ | 14,278,782 m³ |\n"
-                )
-                raw_text += table_p25
+                # Share audited units/values with UI; do not label chart estimates verified.
+                raw_text += get_verified_water_context()
 
             if "2026" in doc_title and page_idx == 54:
                 table_p54 = (
@@ -526,3 +517,4 @@ def run_ingestion():
 
 if __name__ == "__main__":
     run_ingestion()
+

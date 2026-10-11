@@ -7,7 +7,7 @@ Baseline source: `2413b4d5011c74ddfb2e773b6f643fc4cd3dd140`
 
 ```bash
 python -m pip install -r requirements-test.txt
-python -m unittest test_dynamic_math test_baseline_regressions -v
+python -m unittest test_dynamic_math test_baseline_regressions test_resource_metrics -v
 ```
 
 PowerShell uses the same install and test commands.
@@ -18,11 +18,12 @@ with their actual math and table dependencies. They do not copy the router rules
 into a separate implementation. This temporary extraction approach will be
 replaced with direct imports when the query engine is separated from the UI.
 
-## Current status after stage 2
+## Current status after stage 3
 
-17 tests: **14 pass, 3 expected failures**. FY24 display regressions are fixed.
-See `CARBON_DATA_VERIFICATION.md` for the source-backed 51-value carbon audit.
-Water/energy/waste, retrieval and model integration remain unverified.
+28 tests: **25 pass, 3 expected failures**. FY24 display regressions are fixed.
+See `CARBON_DATA_VERIFICATION.md` for the 51-value carbon audit and
+`RESOURCE_DATA_VERIFICATION.md` for water/energy source checks and units.
+Waste, retrieval and model integration remain unverified.
 
 ## Recorded initial baseline
 
@@ -67,7 +68,7 @@ CI so fixes cannot silently leave outdated markers behind.
 
 1. Reproduce the defect before changing its implementation.
 2. Fix it and remove only its expected-failure marker.
-3. Run both offline modules and the relevant new regression tests.
+3. Run all offline modules and the relevant new regression tests.
 4. Record passing checks, unresolved defects, and any integration limitations.
 5. Run model/PDF/retrieval integration checks when those layers change.
 

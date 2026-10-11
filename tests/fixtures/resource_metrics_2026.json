@@ -1,0 +1,88 @@
+{
+  "publication_year": 2026,
+  "source_url": "https://aka.ms/SustainabilityFactsheet2026",
+  "source_pdf_sha256": "0fd180837df00b3427c3eae484a492224b8f18c381e82a2aed98b04553a197f6",
+  "water_source": {
+    "page": 7,
+    "table": 8,
+    "unit": "ML"
+  },
+  "energy_source": {
+    "page": 6,
+    "tables": [
+      5,
+      6
+    ]
+  },
+  "annual_replenishment_source": {
+    "repository_path": "docs/2026-Microsoft-Environmental-Sustainability-Report-PDF.pdf",
+    "page": 25,
+    "unit": "m3",
+    "sha256": "20918e9fc4a02241f55d12f1f5b6228a832b706499f9963a1a3f91e3d3e693ba"
+  },
+  "years": [
+    "FY20_Baseline",
+    "FY23",
+    "FY24",
+    "FY25"
+  ],
+  "water_ml": {
+    "Water Withdrawal (million m3)": [
+      6794,
+      9666,
+      11590,
+      13266
+    ],
+    "Water Consumption (million m3)": [
+      3990,
+      5818,
+      6693,
+      8170
+    ],
+    "Water Discharge (million m3)": [
+      2804,
+      3848,
+      4897,
+      5096
+    ]
+  },
+  "annual_replenishment_m3": [
+    746937,
+    2745825,
+    6610656,
+    14278782
+  ],
+  "energy": {
+    "Total Energy Consumption": [
+      11283502,
+      24007868,
+      30207220,
+      37461476
+    ],
+    "Total Electricity Consumption": [
+      10770714,
+      23567502,
+      29829540,
+      37026353
+    ],
+    "Total Matched Renewable Electricity": [
+      10244377,
+      23567502,
+      29829540,
+      34534392
+    ],
+    "Direct Renewable Electricity Share (%)": [
+      null,
+      59,
+      78,
+      100
+    ]
+  },
+  "notes": [
+    "1 ML = 1000 m3 = 0.001 million m3.",
+    "2026 edition restates historical values.",
+    "Use Table 8 FY24 withdrawals of 11590 ML; report p25 graphic shows 11589000 m3 (a 1 ML discrepancy).",
+    "Table 5 matched renewables excludes grid mix. Table 6 direct renewable percentage includes grid mix.",
+    "FY20 direct renewable percentage is not reported; null means unavailable, not zero."
+  ]
+}

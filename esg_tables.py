@@ -135,95 +135,76 @@ def get_carbon_removal_by_type_df() -> pd.DataFrame:
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # 4. SU METRİKLERİ — ÖZET (Water Summary & Replenishment)
-#    Kaynak: 2024 Report (p. 7, 28) & 2025 Report — Water Table 1 (p. 35-36)
+#    Kaynak: 2026 Data Fact Sheet p.7 Table 8 & 2026 Report p.25
 #    Birim : million m3 (milyon metreküp)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def get_water_metrics_df() -> pd.DataFrame:
-    """
-    Yıllık su çekimi (withdrawal), kümülatif sözleşmeli yenileme hacmi,
-    yıllık (in-year) yenileme faydası ve tamamlanan yenileme hacmi.
-    TÜM DEĞERLER AÇIKÇA million m3 (milyon metreküp) CİNSİNDENDİR.
+    """2026 restated inventory; ML / 1000 and m3 / 1,000,000 -> million m3.
+
+    Inventory: Data Fact Sheet p.7 Table 8; annual replenishment: report p.25.
+    FY24 withdrawals use Table 8 (11,590 ML), not the report graphic (11,589 ML).
+    Annual replenishment is separate from contracted lifetime benefits.
     """
     data = {
         "Metric": [
             "Water Withdrawal (million m3)",
-            "Cumulative Contracted Water Replenishment Volume (million m3)",
-            "In-Year Specifically Contracted Water Replenishment Benefit (million m3)",
-            "Water Replenishment Volumetric Target (million m3)",
-            "Water Replenishment Completed Volume (million m3)",
-            "Water Replenishment Achievement Rate (%)",
+            "Water Consumption (million m3)",
+            "Water Discharge (million m3)",
+            "Water Replenishment (million m3)",
         ],
-        "FY20_Baseline": [4830.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-        "FY23":          [7100.0, 61.7, 25.0, 4500.0, 3100.0, 68.9],
-        "FY24":          [8450.0, 93.5, 32.2, 6100.0, 4200.0, 68.9],
-        "FY25":          [10210.0, 125.0, 35.0, 9500.0, 7800.0, 82.1],
+        "Unit": ["million m3"] * 4,
+        "FY20_Baseline": [6794 / 1000, 3990 / 1000, 2804 / 1000, 746937 / 1_000_000],
+        "FY23": [9666 / 1000, 5818 / 1000, 3848 / 1000, 2745825 / 1_000_000],
+        "FY24": [11590 / 1000, 6693 / 1000, 4897 / 1000, 6610656 / 1_000_000],
+        "FY25": [13266 / 1000, 8170 / 1000, 5096 / 1000, 14278782 / 1_000_000],
+        "Source": ["2026 Data Fact Sheet, Table 8, p.7"] * 3 + ["2026 Report, p.25"],
     }
     return pd.DataFrame(data)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # 5. SU YENİLEME PROJELERİ — BÖLGE & TİP KIRILIMLARI (Water Table 1 Expanded)
-#    Kaynak: 2025 Report — Water Replenishment Projects Table (p. 36-38)
+#    Bölge/tip kırılımı: doğrulanmış veri mevcut değil; boş tablo döndürülür.
 #    Birim : m3 (metreküp, bireysel proje hacimleri)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def get_water_replenishment_projects_df() -> pd.DataFrame:
+    """No verified region/type allocation is available in the audited sources.
+
+    Preserve the public schema but return no observations rather than invent
+    project counts, regional shares, or billion-m3 volumes. Missing is not zero.
     """
-    Su yenileme projelerinin bölge ve proje tipi bazında kırılımı.
-    Tamamlanan hacim m3 cinsinden; proje adedi toplam adet.
-    """
-    data = {
-        "Region": [
-            "Americas (North)",
-            "Americas (Latin)",
-            "Europe, Middle East & Africa",
-            "Asia Pacific",
-            "Global / Multi-region",
-        ],
-        "Project_Type": [
-            "Watershed Restoration & Conservation",
-            "Wetland & Riparian Restoration",
-            "Agricultural Water Efficiency",
-            "Groundwater Recharge",
-            "Urban Water Recycling",
-        ],
-        "FY24_Projects_Count": [18, 11, 9,  7,  4],
-        "FY25_Projects_Count": [24, 15, 13, 10, 5],
-        "FY25_Completed_Volume_m3": [
-            2_900_000_000,
-            1_750_000_000,
-            1_480_000_000,
-            1_120_000_000,
-            550_000_000,
-        ],
-        "FY25_Share_Pct": [37.2, 22.4, 19.0, 14.4, 7.1],
-    }
-    return pd.DataFrame(data)
+    frame = pd.DataFrame(columns=[
+        "Region", "Project_Type", "FY24_Projects_Count", "FY25_Projects_Count",
+        "FY25_Completed_Volume_m3", "FY25_Share_Pct",
+    ])
+    frame.attrs["verification_status"] = "unavailable"
+    return frame
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # 6. ENERJİ METRİKLERİ (Energy Summary)
-#    Kaynak: 2025 Report — Energy Table (p. 28-29)
-#    Birim : MWh (megawatt-saat)
+#    Kaynak: 2026 Data Fact Sheet p.6 Tables 5/6
+#    Birim : MWh (hacimler), % (doğrudan yenilenebilir elektrik oranı)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def get_energy_metrics_df() -> pd.DataFrame:
-    """
-    Toplam enerji tüketimi, yenilenebilir enerji alımı ve yenilenebilir oran.
-    Birim: MWh.
+    """2026 Data Fact Sheet p.6 Tables 5/6; distinguish energy from electricity.
+
+    Matched renewables (Table 5) excludes grid mix; direct renewable percentage
+    (Table 6) includes it. Annual renewable matching is not hourly CFE coverage.
+    Unreported FY20 percentage remains missing, never zero or an invented ratio.
     """
     data = {
-        "Metric": [
-            "Total Electricity Consumption",
-            "Renewable Energy Purchased (PPA + REC)",
-            "Renewable Energy Share (%)",
-            "On-site Renewable Generation",
-            "Carbon-free Energy Coverage (%)",
-        ],
-        "FY20_Baseline": [10_200_000, 8_100_000,  79.4, 52_000,  79.4],
-        "FY24":          [29_500_000, 23_400_000,  79.3, 98_000,  79.3],
-        "FY25":          [43_800_000, 41_600_000,  95.0, 130_000, 95.0],
+        "Metric": ["Total Energy Consumption", "Total Electricity Consumption",
+                   "Total Matched Renewable Electricity", "Direct Renewable Electricity Share (%)"],
+        "Unit": ["MWh", "MWh", "MWh", "%"],
+        "FY20_Baseline": [11_283_502, 10_770_714, 10_244_377, None],
+        "FY23": [24_007_868, 23_567_502, 23_567_502, 59],
+        "FY24": [30_207_220, 29_829_540, 29_829_540, 78],
+        "FY25": [37_461_476, 37_026_353, 34_534_392, 100],
+        "Source": ["2026 Data Fact Sheet, Table 5, p.6"] * 3 + ["2026 Data Fact Sheet, Table 6, p.6"],
     }
     return pd.DataFrame(data)
 
@@ -293,3 +274,16 @@ def get_zero_waste_certifications_df() -> pd.DataFrame:
     }
     return pd.DataFrame(data)
 
+
+
+def get_verified_water_context() -> str:
+    """Shared source-aware water context for future ingestion, not chart guesses."""
+    return (
+        "\n\n### Water inventory and annual replenishment — 2026 edition\n"
+        "Inventory source: https://aka.ms/SustainabilityFactsheet2026, Table 8, p.7.\n"
+        "Annual replenishment source: 2026 Environmental Sustainability Report, p.25.\n"
+        "All volumes below are million m3. 1 ML = 0.001 million m3.\n"
+        "FY24 withdrawals use Table 8 (11,590 ML); report p.25 shows 11,589,000 m3.\n"
+        + get_water_metrics_df().to_string(index=False)
+        + "\nThese are annual realized volumes, not contracted lifetime benefits.\n"
+    )

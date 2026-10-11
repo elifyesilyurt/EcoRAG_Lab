@@ -185,7 +185,7 @@ def classify_esg_intent(query: str) -> str:
     Sorguyu semantik ve ontolojik ESG alanlarına sınıflandırır:
     - 'out_of_domain': ESG kapsamı dışındaki teknik donanım, spor, finans vb. sorular (güvenli ret)
     - 'packaging_plastic': Tek kullanımlık plastik, ambalaj azaltımı, 0.07%, 4.2% düşüş trendi
-    - 'water_stewardship': Su yenileme (125M m³), hedef başarısı (%82.1), FIDO Tech akustik kaçak tespiti
+    - 'water_stewardship': Yıllık su bilançosu, su yenileme, FIDO Tech akustik kaçak tespiti
     - 'zero_waste_circularity': UL 2799, TRUE Zero Waste, Circular Centers (%89.4 donanım döngüselliği), 10-14 veri merkezi, 218K ton atık
     - 'carbon_removal': Karbon Tablosu 3, 21.9M mtCO2e (4.37x büyüme), orman, biyokütle/BECCS, DAC
     - 'carbon_commitments': 2030 Karbon Negatif, 2050 tarihsel emisyon telafisi, %100 CFE, 34 GW PPA portföyü
@@ -609,38 +609,48 @@ def compute_carbon_trend_summary(lang: str = "tr") -> str:
     return "\n".join(lines)
 
 def compute_carbon_commitments_summary(lang: str = "tr") -> str:
+    df = get_energy_metrics_df().set_index("Metric")
+    electricity = float(df.loc["Total Electricity Consumption", "FY25"])
+    matched = float(df.loc["Total Matched Renewable Electricity", "FY25"])
+    direct_pct = float(df.loc["Direct Renewable Electricity Share (%)", "FY25"])
     if lang == "tr":
-        return """Microsoft'un 2024–2026 Çevresel Sürdürülebilirlik Raporlarında açıklanan temel kurumsal karbon ve enerji taahhütleri; **2030 yılına kadar Karbon Negatif olma**, **2050 yılına kadar 1975'ten beri salınan tüm tarihsel emisyonları telafi etme** ve veri merkezi operasyonlarını **%100 Karbonsuz Elektrik (CFE)** ile eşleştirmeyi içerir. Veri merkezi elektrik tüketimi 43.8M MWh'a yükselirken, temiz enerji alım anlaşmaları (PPA) **34 GW** kapasiteye ulaşmıştır.
-
-### 📊 Kurumsal Karbon ve Temiz Enerji Taahhütleri Tablosu
-
-| Taahhüt & Stratejik Hedef | Hedef Yılı | Kapsam & Detaylar | Doğrulanmış Durum (FY25) |
-| :--- | :---: | :--- | :--- |
-| 🌱 **Karbon Negatif (Carbon Negative)** | **2030** | Scope 1, 2 ve 3 emisyonlarının tamamından daha fazlasını atmosferden kalıcı olarak uzaklaştırma | 21.9M+ mtCO2e sözleşmeli CDR portföyü |
-| 🏛️ **Tarihsel Emisyonları Telafi Etme** | **2050** | 1975 kuruluşundan bu yana salınan tüm doğrudan ve elektrik kaynaklı kümülatif emisyonları sıfırlama | Kalıcı jeolojik ve mineral teknolojilerine uzun vadeli alım taahhütleri |
-| ⚡ **%100 Karbonsuz Elektrik (CFE)** | **2030** | Küresel veri merkezlerinin tükettiği elektriği 7/24 saatlik sıfır karbonlu enerjiyle eşleştirme | 41.6M MWh yenilenebilir elektrik tedariki (%95.0 kapsama) |
-| 🔌 **Elektrik & PPA Kapasite Trendi** | Sürekli | Büyüyen veri merkezi tüketimini temiz enerji alım anlaşmalarıyla (PPA) karşılama | Tüketim 43.8M MWh'a çıkarken **34 GW** PPA portföyüne ulaşıldı |
-| 🤝 **Değer Zinciri (Scope 3) Şartı** | **2030** | Scope 3 emisyonlarını %50'den fazla azaltma | Büyük tedarikçilere %100 karbonsuz elektrik kullanma zorunluluğu |
-
-### 💡 Temel İnisiyatifler
-* **21.9M+ mtCO2e Karbon Uzaklaştırma:** Kalıcı Direct Air Capture ve biyo-kütle dahil dünyanın en büyük kurumsal alım portföyü hayata geçirilmiştir.
-* **34 GW Temiz Enerji Portföyü:** Artan veri merkezi güç ihtiyacını karşılamak için küresel temiz enerji anlaşmaları rekor seviyeye ulaştırılmıştır."""
+        labels = ["Toplam enerji tüketimi", "Elektrik tüketimi", "Eşleştirilen yenilenebilir elektrik", "Doğrudan yenilenebilir elektrik oranı"]
+        lines = ["### ⚡ Karbon ve enerji — FY25",
+                 "Microsoft'un karbon negatif olma hedefi 2030'dur (2026 raporu, s.8).",
+                 f"Küresel elektrik tüketimi **{electricity:,.0f} MWh**; eşleştirilen yenilenebilir elektrik "
+                 f"**{matched:,.0f} MWh**; doğrudan yenilenebilir elektrik oranı **%{direct_pct:.0f}**.", "",
+                 "| Gösterge | Birim | FY20 | FY23 | FY24 | FY25 |",
+                 "| :--- | :--- | ---: | ---: | ---: | ---: |"]
     else:
-        return """Microsoft's corporate commitments across its 2024–2026 sustainability reports focus on **Carbon Negative by 2030**, **Historical Emissions Compensation by 2050** (covering all cumulative emissions since 1975), and powering datacenter operations with **100% Carbon-Free Electricity (CFE)** backed by a **34 GW** clean energy PPA portfolio against 43.8M MWh electricity consumption.
-
-### 📊 Corporate Carbon & Clean Energy Commitments Table
-
-| Strategic Commitment | Target Year | Scope & Mechanism | Verified Status (FY25) |
-| :--- | :---: | :--- | :--- |
-| 🌱 **Carbon Negative** | **2030** | Remove more carbon each year than emitted across Scope 1, 2, and 3 operations | 21.9M+ mtCO2e contracted CDR portfolio |
-| 🏛️ **Historical Emissions Compensation** | **2050** | Remove all cumulative emissions since founding in 1975 from direct & electrical operations | Advance market commitments for high-durability engineered solutions |
-| ⚡ **100% Carbon-Free Electricity (CFE)** | **2030** | Match 100% of global datacenter electricity consumption with zero-carbon energy on an hourly basis | 41.6M MWh renewable procurement (95.0% coverage) |
-| 🔌 **Electricity & PPA Scaling Trend** | Ongoing | Power datacenter growth with contracted clean power purchase agreements | Consumption grew to 43.8M MWh, met by **34 GW** PPA portfolio |
-| 🤝 **Scope 3 Value Chain Mandate** | **2030** | Target to cut Scope 3 value chain emissions by more than 50% | Mandating 100% clean electricity requirements for key suppliers |
-
-### 💡 Strategic Governance & Progress
-* **Carbon Removal Scale:** Supported by 21.9M+ mtCO2e contracted carbon dioxide removal.
-* **Energy Procurement:** Over 34 GW in signed renewable power purchase agreements."""
+        labels = ["Total energy consumption", "Electricity consumption", "Total matched renewable electricity", "Direct renewable electricity share"]
+        lines = ["### ⚡ Carbon and energy — FY25",
+                 "Microsoft's carbon negative target is 2030 (2026 report, p.8).",
+                 f"Global electricity consumption was **{electricity:,.0f} MWh**, matched renewable electricity "
+                 f"**{matched:,.0f} MWh**, and direct renewable electricity share **{direct_pct:.0f}%**.", "",
+                 "| Metric | Unit | FY20 | FY23 | FY24 | FY25 |",
+                 "| :--- | :--- | ---: | ---: | ---: | ---: |"]
+    metrics = ["Total Energy Consumption", "Total Electricity Consumption",
+               "Total Matched Renewable Electricity", "Direct Renewable Electricity Share (%)"]
+    for label, metric in zip(labels, metrics):
+        row = df.loc[metric]
+        values = []
+        for year in ("FY20_Baseline", "FY23", "FY24", "FY25"):
+            value = row[year]
+            values.append("—" if pd.isna(value) else f"{float(value):,.0f}")
+        lines.append(f"| {label} | {row['Unit']} | {' | '.join(values)} |")
+    if lang == "tr":
+        lines.extend(["", "**Tanımlar:** Tablo 5'te eşleştirilen yenilenebilir elektrik şebeke karmasını içermez. "
+                      "Tablo 6'nın doğrudan yenilenebilir oranı şebeke karmasını içerir; bu iki metrik farklıdır. "
+                      "Yıllık yenilenebilir eşleştirme, 7/24 saatlik karbonsuz elektrik (CFE) kapsamı değildir. "
+                      "— raporlanmayan değerdir, sıfır değildir."])
+    else:
+        lines.extend(["", "**Definitions:** Table 5 matched renewable electricity excludes grid mix. "
+                      "Table 6 direct renewable percentage includes grid mix; these are different metrics. "
+                      "Annual renewable matching is not 24/7 hourly carbon-free electricity (CFE) coverage. "
+                      "— means not reported, not zero."])
+    lines.extend(["", "Source: [2026 Data Fact Sheet, Tables 5/6, p.6](https://aka.ms/SustainabilityFactsheet2026). "
+                  "Historical values are restated in the 2026 edition."])
+    return "\n".join(lines)
 
 def compute_carbon_removal_summary(lang: str = "tr") -> str:
     if lang == "tr":
@@ -751,48 +761,63 @@ def compute_packaging_summary(lang: str = "tr") -> str:
 * **Molded Fiber Pulp:** Molded fiber pulp cushioning replaces petroleum-based foams across Surface and Xbox product packaging."""
 
 def compute_water_summary(lang: str = "tr") -> str:
+    df = get_water_metrics_df().set_index("Metric")
+    withdrawal = float(df.loc["Water Withdrawal (million m3)", "FY25"])
+    consumption = float(df.loc["Water Consumption (million m3)", "FY25"])
+    replenishment = float(df.loc["Water Replenishment (million m3)", "FY25"])
+    difference = withdrawal - consumption
+    excess = replenishment - withdrawal
+    ratio = replenishment / withdrawal * 100 if withdrawal else None
+    ratio_text = f"{ratio:.2f}%" if ratio is not None else "—"
     if lang == "tr":
-        return """Microsoft'un 2026 Çevresel Sürdürülebilirlik Raporu ve Su Tablosu 1 verilerine göre kümülatif sözleşmeli su ikmal hacmi **125.0 milyon m³** seviyesine ulaşmıştır. FY25 yılında tamamlanan 7,800 milyon m³ su yenileme hacmi ile 9,500M m³ hedef üzerinden gerçekleşme oranı **%82.1**'e yükselmiştir (FY24'teki %68.9 seviyesine kıyasla +13.2 puan artış).
-
-### 💧 Su Yönetimi ve Hedef Gerçekleşme Metrik Tablosu (Su Tablosu 1)
-
-| Su Göstergesi & Metrik | Raporlanan Değer | Hedef / Referans | İlerleme Durumu | Detay & Kapsam |
-| :--- | :---: | :---: | :---: | :--- |
-| 🌊 **Kümülatif Sözleşmeli Su İkmal Hacmi** | **`125.0 milyon m³`** | FY25 İtibarıyla | Sürekli Büyüme | Risk altındaki küresel su havzaları |
-| 📅 **FY25 Yıllık Sözleşmeli Su Faydası** | **`35.0 milyon m³`** | FY25 Yıllık | Yıllık Katkı | Havza restorasyonu ve sulak alan projeleri |
-| 🎯 **Tamamlanan Su Yenileme Hacmi** | **`7,800 milyon m³`** | 9,500M m³ Hedef | Gerçekleşme: **%82.1** | FY24 (%68.9) seviyesine göre **+13.2 puan** iyileşme |
-| 🚰 **Yıllık Toplam Su Çekimi** | `10,210M m³` | FY20: 4,830M m³ | Büyüyen Hacim | Veri merkezi eko-soğutma ve operasyonel kullanım |
-
-### 🤖 Yapay Zeka ile Akustik Kaçak Tespiti Projesi (FIDO Tech)
-
-| Ortak Girişim | Uygulanan Teknoloji | Pilot Şehirler & Lokasyonlar | Sağlanan Fayda |
-| :--- | :--- | :--- | :--- |
-| 🛰️ **FIDO Tech** | AI Destekli Akustik Sensör Analizi | 🇬🇧 **Londra (İngiltere)**<br>🇲🇽 **Querétaro (Meksika)**<br>🇺🇸 **Phoenix (ABD)** | Belediye dağıtım şebekelerinde yeraltı su borusu sızıntılarını noktasal tespit ederek su kaybını önleme |
-
-### 💡 Temel İnisiyatifler
-* **Akustik Kaçak Tespiti AI:** FIDO Tech sensör yapay zekası belediye su şebekelerine entegre edilerek dağıtım kayıpları minimize edilmektedir.
-* **Adyabatik Soğutma:** Veri merkezlerinde tatlı su tüketimini azaltan eko-soğutma mimarileri kullanılmaktadır."""
+        labels = ["Su çekimi", "Su tüketimi", "Su deşarjı", "Yıllık su yenileme"]
+        lines = ["### 💧 Su bilançosu — FY25",
+                 f"Su çekimi **{withdrawal:.3f} milyon m³**, tüketim **{consumption:.3f} milyon m³**; "
+                 f"aralarındaki fark **{difference:.3f} milyon m³** ({difference * 1_000_000:,.0f} m³).",
+                 f"Yıllık su yenileme **{replenishment:.6f} milyon m³**; çekimin **{ratio_text}**'i. "
+                 f"Yenileme eksi çekim: **{excess:.6f} milyon m³**.", "",
+                 "| Gösterge (milyon m³) | FY20 | FY23 | FY24 | FY25 |",
+                 "| :--- | ---: | ---: | ---: | ---: |"]
     else:
-        return """According to the 2026 report and Water Table 1, Microsoft's cumulative contracted water replenishment reached **125.0 million m³**, with replenishment achievement climbing to **82.1%** in FY25 (up +13.2 points from 68.9% in FY24). Microsoft deployed AI acoustic leak analysis in partnership with FIDO Tech across London, Querétaro, and Phoenix.
+        labels = ["Water withdrawal", "Water consumption", "Water discharge", "Annual water replenishment"]
+        lines = ["### 💧 Water inventory — FY25",
+                 f"Water withdrawal was **{withdrawal:.3f} million m³**, consumption **{consumption:.3f} million m³**; "
+                 f"the difference is **{difference:.3f} million m³** ({difference * 1_000_000:,.0f} m³).",
+                 f"Annual replenishment was **{replenishment:.6f} million m³**, or **{ratio_text}** of withdrawals. "
+                 f"Replenishment minus withdrawals: **{excess:.6f} million m³**.", "",
+                 "| Metric (million m³) | FY20 | FY23 | FY24 | FY25 |",
+                 "| :--- | ---: | ---: | ---: | ---: |"]
+    metrics = ["Water Withdrawal (million m3)", "Water Consumption (million m3)",
+               "Water Discharge (million m3)", "Water Replenishment (million m3)"]
+    for label, metric in zip(labels, metrics):
+        row = df.loc[metric]
+        values = " | ".join(f"{float(row[year]):.6f}" for year in ("FY20_Baseline", "FY23", "FY24", "FY25"))
+        lines.append(f"| {label} | {values} |")
+    if lang == "tr":
+        lines.extend(["", "**Kapsam:** Küresel yıllık hacimlerdir; her havzada hedefe ulaşıldığı anlamına gelmez. "
+                      "Projelerin ömür boyu beklenen faydası 133 milyon m³'ten fazladır; bu, FY25 yıllık yenileme hacmi değildir.",
+                      "**Birim:** 1 ML = 1.000 m³ = 0,001 milyon m³. FY24 çekimi için veri föyü kullanılmıştır "
+                      "(11.590 ML); rapor grafiği 11.589.000 m³ gösterir.",
+                      "**FIDO Tech:** AI destekli kaçak tespiti Phoenix ve Querétaro belediye şebekelerinde su kaybını azaltmaya yardımcı olur (2026 raporu, s.57)."])
+    else:
+        lines.extend(["", "**Scope:** Global annual volumes do not establish target achievement in every watershed. "
+                      "Contracted projects represent more than 133 million m³ over their lifetime; this is not FY25 annual replenishment.",
+                      "**Units:** 1 ML = 1,000 m³ = 0.001 million m³. FY24 withdrawal follows the fact sheet "
+                      "(11,590 ML); the report graphic shows 11,589,000 m³.",
+                      "**FIDO Tech:** AI leak detection helps reduce water losses in municipal networks in Phoenix and Querétaro (2026 report, p.57)."])
+    lines.extend(["", "Source: [2026 Data Fact Sheet, Table 8, p.7](https://aka.ms/SustainabilityFactsheet2026); "
+                  "2026 Environmental Sustainability Report, p.25 (annual replenishment and lifetime benefits). "
+                  "Historical inventory values are restated in the 2026 edition."])
+    return "\n".join(lines)
 
-### 💧 Water Stewardship & Target Achievement Metrics Table (Water Table 1)
 
-| Water Metric | Reported Value | Target / Baseline | Progress & Status | Scope & Geographic Context |
-| :--- | :---: | :---: | :---: | :--- |
-| 🌊 **Cumulative Contracted Replenishment** | **`125.0 million m³`** | FY25 Cumulative | Sustained Growth | Priority high-stress global river basins |
-| 📅 **In-Year Contracted Water Benefit** | **`35.0 million m³`** | FY25 Annual | Annual Contract | Basin restoration and wetland enhancement |
-| 🎯 **Completed Replenishment Volume** | **`7,800 million m³`** | 9,500M m³ Target | Achievement: **82.1%** | Up **+13.2 points** compared to 68.9% in FY24 |
-| 🚰 **Annual Total Water Withdrawal** | `10,210M m³` | FY20: 4,830M m³ | Volume Scale | Datacenter adiabatic cooling & operations |
-
-### 🤖 AI-Enabled Acoustic Leak Detection Initiative (FIDO Tech)
-
-| Partner Initiative | Technology Deployed | Pilot Cities & Deployment Locations | Municipal Impact |
-| :--- | :--- | :--- | :--- |
-| 🛰️ **FIDO Tech** | AI-driven acoustic sensor analysis | 🇬🇧 **London (UK)**<br>🇲🇽 **Querétaro (Mexico)**<br>🇺🇸 **Phoenix (USA)** | Pinpointing underground distribution network leaks to conserve treated water |
-
-### 💡 Strategic Action
-* **Acoustic AI Leak Detection:** FIDO Tech acoustic sensors identify hidden pipe leaks in municipal networks.
-* **Eco-Cooling:** Datacenter adiabatic cooling designs reduce freshwater withdrawal."""
+def compute_water_dashboard_metrics(lang: str = "tr") -> dict:
+    df = get_water_metrics_df().set_index("Metric")
+    row = df.loc["Water Replenishment (million m3)"]
+    volume = float(row["FY25"])
+    delta = volume - float(row["FY24"])
+    unit = "milyon m³" if lang == "tr" else "million m³"
+    return {"value": f"{volume:.2f} {unit}", "delta": f"{delta:+.2f} {unit} (FY24 → FY25)"}
 
 def search_context_hybrid(query: str, year_filter: Optional[str] = None):
     import unicodedata
@@ -964,28 +989,32 @@ def get_esg_impact_insight(query: str, answer: str, lang: str = "tr"):
                 )
             }
     elif any(k in combined for k in ["su", "water", "replenish", "yenileme", "çekim", "withdrawal", "consumption", "tüketim", "fido"]):
+        water_df = get_water_metrics_df().set_index("Metric")
+        replenished = float(water_df.loc["Water Replenishment (million m3)", "FY25"])
+        withdrawal = float(water_df.loc["Water Withdrawal (million m3)", "FY25"])
         if lang == "tr":
             return {
                 "title": "Sürdürülebilirlik Uyum & Aksiyon Özeti",
                 "pillar": "💧 Su Pozitifliği (Water Stewardship & Replenishment)",
-                "target": "2030 Su Pozitif (Tüketilen Miktardan Daha Fazlasını Doğaya Kazandırma)",
+                "target": "2030 Su Pozitif (Çekilenden Daha Fazlasını Yenileme)",
                 "actions": (
-                    "• **125M m³ Kümülatif Yenileme Hacmi:** FY25'te 35M m³ yıllık sözleşmeli fayda sağlanarak nehir havzalarının restorasyonu hızlandırıldı.\n\n"
-                    "• **FIDO Tech Akustik AI Ortaklığı:** Londra, Phoenix ve Querétaro su dağıtım şebekelerinde yapay zeka ile şebeke kaçak tespiti devreye alındı.\n\n"
-                    "• **Veri Merkezi Eko-Soğutma:** Yeni tesislerde kapalı devre ve adyabatik teknolojilerle şebekeden çekilen tatlı su tüketimi asgariye indirildi."
+                    f"• **FY25 yıllık su yenileme:** {replenished:.6f} milyon m³; su çekimi {withdrawal:.3f} milyon m³. "
+                    "Küresel hacim, her havzada hedefe ulaşıldığını göstermez.\n\n"
+                    "• **Sözleşmeli projeler:** Ömür boyu beklenen fayda 133 milyon m³'ten fazla; yıllık gerçekleşmeden ayrıdır.\n\n"
+                    "• **Kaynak:** 2026 raporu s.25 ve 2026 Veri Föyü Tablo 8."
                 )
             }
-        else:
-            return {
-                "title": "ESG Alignment & Corporate Action Insight",
-                "pillar": "💧 Water Stewardship (Water Positive by 2030)",
-                "target": "2030 Water Positive (Replenishing More Freshwater Than Consumed)",
-                "actions": (
-                    "• **125M m³ Cumulative Contracted Replenishment:** Delivering 35M m³ in-year contracted benefit across stressed river basins in FY25.\n\n"
-                    "• **FIDO Tech Acoustic AI Partnership:** Deployed AI-powered leak detection in municipal networks across London, Phoenix, and Querétaro.\n\n"
-                    "• **Closed-Loop Datacenter Cooling:** Scaled adiabatic and direct-to-chip eco-cooling to minimize municipal water dependency."
-                )
-            }
+        return {
+            "title": "ESG Alignment & Corporate Action Insight",
+            "pillar": "💧 Water Stewardship (Water Positive by 2030)",
+            "target": "2030 Water Positive (Replenishing More Than Withdrawn)",
+            "actions": (
+                f"• **FY25 annual replenishment:** {replenished:.6f} million m³; withdrawals {withdrawal:.3f} million m³. "
+                "Global volumes do not establish achievement in every watershed.\n\n"
+                "• **Contracted projects:** More than 133 million m³ in lifetime benefits, separate from annual realized volumes.\n\n"
+                "• **Source:** 2026 report p.25 and 2026 Data Fact Sheet Table 8."
+            )
+        }
     elif any(k in combined for k in ["atık", "waste", "sıfır atık", "zero waste", "plastik", "plastic", "ambalaj", "packaging", "ul 2799", "circular"]):
         if lang == "tr":
             return {
@@ -1064,9 +1093,9 @@ TEXTS = {
         "kpi_co2_title": "Toplam GHG Emisyonu (FY25)",
         "kpi_co2_delta": "+61.7% (FY20 Bazına Göre)",
         "kpi_co2_cap": "Scope 1 + Scope 2 (Market) + Scope 3",
-        "kpi_water_title": "Kümülatif Su Yenileme (FY25)",
-        "kpi_water_delta": "+82.1% Hedef Başarım Oranı",
-        "kpi_water_cap": "2030 Water Positive Hedefi Kapsamı",
+        "kpi_water_title": "Yıllık Su Yenileme (FY25)",
+        "kpi_water_delta": "FY24–FY25 yıllık hacim değişimi",
+        "kpi_water_cap": "Kaynak: 2026 raporu, s.25 • Yıllık gerçekleşen hacim",
         "kpi_waste_title": "Yönlendirilen Katı Atık (FY25)",
         "kpi_waste_delta": "%82.3 Çöpten Kurtarma Oranı",
         "kpi_waste_cap": "Geri Dönüşüm, Yeniden Kullanım ve Kompost",
@@ -1076,8 +1105,8 @@ TEXTS = {
         "dash_t1_cap": "Birim: mtCO2e (Metrik ton CO2 eşdeğeri) • Kaynak: 2025 Report Appendix Table 1",
         "dash_t2": "2. Karbon Uzaklaştırma Portföyü",
         "dash_t2_cap": "Birim: mtCO2e • Kaynak: 2025 Report p.21-22",
-        "dash_t3": "3. Su Bilançosu & Hedefler",
-        "dash_t3_cap": "Birim: million m³ • Kaynak: 2025 Report Water Table 1",
+        "dash_t3": "3. Su Bilançosu & Yıllık Yenileme",
+        "dash_t3_cap": "Birim: milyon m³ • 2026 Veri Föyü Tablo 8 & Rapor s.25",
         "dash_t4": "4. Sıfır Atık & UL Solutions Sertifikasyonları",
         "dash_t4_cap": "Kaynak: 2024 Report p.36 & 2025 Report p.47",
         "dash_t5": "5. 2026 Çevresel Sürdürülebilirlik Raporu — Denetim Metrikleri & Bölgesel Göstergeler",
@@ -1118,9 +1147,9 @@ TEXTS = {
         "kpi_co2_title": "Total GHG Emissions (FY25)",
         "kpi_co2_delta": "+61.7% (vs FY20 Baseline)",
         "kpi_co2_cap": "Scope 1 + Scope 2 (Market) + Scope 3",
-        "kpi_water_title": "Cumulative Water Replenishment (FY25)",
-        "kpi_water_delta": "+82.1% Achievement Rate",
-        "kpi_water_cap": "2030 Water Positive Commitment",
+        "kpi_water_title": "Annual Water Replenishment (FY25)",
+        "kpi_water_delta": "FY24–FY25 annual volume change",
+        "kpi_water_cap": "Source: 2026 report, p.25 • Realized annual volume",
         "kpi_waste_title": "Diverted Solid Waste (FY25)",
         "kpi_waste_delta": "82.3% Diversion Rate",
         "kpi_waste_cap": "Recycled, Reused & Composted",
@@ -1130,8 +1159,8 @@ TEXTS = {
         "dash_t1_cap": "Unit: mtCO2e (Metric tons CO2 equivalent) • Source: 2025 Report Appendix Table 1",
         "dash_t2": "2. Carbon Removal Portfolio Breakdown",
         "dash_t2_cap": "Unit: mtCO2e • Source: 2025 Report p.21-22",
-        "dash_t3": "3. Water Metrics & Replenishment Targets",
-        "dash_t3_cap": "Unit: million m³ • Source: 2025 Report Water Table 1",
+        "dash_t3": "3. Water Inventory & Annual Replenishment",
+        "dash_t3_cap": "Unit: million m³ • 2026 Data Fact Sheet Table 8 & Report p.25",
         "dash_t4": "4. Zero Waste & UL Solutions Certifications",
         "dash_t4_cap": "Source: 2024 Report p.36 & 2025 Report p.47",
         "dash_t5": "5. 2026 Environmental Sustainability Report — Audit Metrics & Regional Indicators",
@@ -2984,11 +3013,11 @@ with tab_chat:
                         stream_gen = stream_static_text(not_found_msg)
                     elif intent == "carbon_commitments":
                         route_type = "pal"
-                        print("  -> Yönlendirme: PAL (2030 Karbon Negatif & 2050 Tarihsel Taahhütler)", flush=True)
+                        print("  -> Yönlendirme: PAL (Karbon & Doğrulanmış Enerji Metrikleri)", flush=True)
                         show_live_status(
                             status_placeholder,
-                            "2030 ve 2050 Kurumsal Karbon ve CFE Taahhütleri Getiriliyor" if target_lang == "tr"
-                            else "Retrieving 2030 & 2050 Corporate Carbon & CFE Commitments"
+                            "Karbon Hedefi ve FY25 Enerji Metrikleri Getiriliyor" if target_lang == "tr"
+                            else "Retrieving Carbon Target and FY25 Energy Metrics"
                         )
                         calc_details = compute_carbon_commitments_summary(target_lang)
                         chunks, max_score = search_context_hybrid(query_to_run, year_filter=active_year_filter)
@@ -3039,10 +3068,10 @@ with tab_chat:
                         stream_gen = stream_static_text(calc_details)
                     elif intent == "water_stewardship":
                         route_type = "pal"
-                        print("  -> Yönlendirme: PAL (Su Yenileme, Hedef Gerçekleşme & FIDO Tech)", flush=True)
+                        print("  -> Yönlendirme: PAL (Yıllık Su Bilançosu & FIDO Tech)", flush=True)
                         show_live_status(
                             status_placeholder,
-                            "Deterministik PAL Motoru ile Su Hedefleri ve Akustik Analiz Çözülüyor" if target_lang == "tr"
+                            "Yıllık Su Bilançosu ve Yenileme Hacimleri Hesaplanıyor" if target_lang == "tr"
                             else "Computing Water Replenishment Metrics & Acoustic AI via PAL"
                         )
                         calc_details = compute_water_summary(target_lang)
@@ -3210,6 +3239,8 @@ with tab_dashboard:
     st.markdown(f"### :material/dashboard: **{T['dash_title']}**")
     st.caption(T["dash_caption"])
 
+    water_kpi = compute_water_dashboard_metrics("tr" if is_tr else "en")
+
     # Üst 3 Büyük KPI Kartı (st.metric)
     col1, col2, col3 = st.columns(3)
     with col1:
@@ -3225,8 +3256,8 @@ with tab_dashboard:
         with st.container(border=True):
             st.metric(
                 label=T["kpi_water_title"],
-                value="125.0M m³",
-                delta=T["kpi_water_delta"],
+                value=water_kpi["value"],
+                delta=water_kpi["delta"],
                 delta_color="normal"
             )
             st.caption(T["kpi_water_cap"])
