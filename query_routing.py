@@ -43,10 +43,8 @@ def is_esg_query(query: str) -> bool:
     
     # Short domain tokens must be words: "ul" in "calculate" is not an ESG signal.
     short_tokens = {"su", "ul", "rec", "cop"}
-    if any(bool(re.search(r"\b" + re.escape(k) + r"\b", q)) if k in short_tokens else k in q
-           for k in esg_keywords):
-        return True
-    return False
+    return any(bool(re.search(r"\b" + re.escape(k) + r"\b", q)) if k in short_tokens else k in q
+               for k in esg_keywords)
 
 def classify_esg_intent(query: str) -> str:
     """Apply domain rejection, numeric intent, then topic-specific narratives.
