@@ -89,23 +89,40 @@ def select_temporal_chunks(scores, report_years, max_k, relative_drop, fiscal_ye
     """
     if not scores or len(fiscal_years) > max_k:
         return []
+    def eligible(item, cutoff):
+        return item['score'] >= cutoff or (item.get('source_priority', 0) > 0
+                                           and item['score'] >= minimum_score)
+
     if fiscal_years:
         groups = []
         for fiscal in fiscal_years:
             number = fiscal[2:]
             pattern = rf'\bfy\s*(?:20)?{number}\b'
             group = [item for item in scores if re.search(pattern, item['content'], re.IGNORECASE)]
-            if not group or group[0]['score'] < minimum_score:
+            if not group or max(item['score'] for item in group) < minimum_score:
                 return []
             groups.append(group)
         per_period = max(1, max_k // len(fiscal_years))
         chosen = {}
         for group in groups:
-            cutoff = group[0]['score'] * relative_drop
+            cutoff = max(item['score'] for item in group) * relative_drop
             for item in group[:per_period]:
-                if item['score'] >= cutoff:
+                if eligible(item, cutoff):
                     chosen[item['id']] = item
-        scores = sorted(chosen.values(), key=lambda item: item['score'], reverse=True)
+        # Multi-period rows may occupy both reserved groups. Deduplication must
+        # not leave half the evidence budget unused and hide relevant metrics.
+        candidates = {}
+        for group in groups:
+            cutoff = max(item['score'] for item in group) * relative_drop
+            for item in group:
+                if eligible(item, cutoff):
+                    candidates[item['id']] = item
+        for item in sorted(candidates.values(), key=lambda item: item['score'], reverse=True):
+            if len(chosen) >= max_k:
+                break
+            chosen[item['id']] = item
+        scores = sorted(chosen.values(), key=lambda item: (item.get('source_priority', 0) > 0,
+                                                       item.get('source_priority', 0), item['score']), reverse=True)
         # Never let final truncation remove the evidence for a requested FY.
         if not report_years:
             return scores
@@ -114,10 +131,10 @@ def select_temporal_chunks(scores, report_years, max_k, relative_drop, fiscal_ye
         per_year = max(1, max_k // len(report_years))
         for year in report_years:
             group = [item for item in scores if str(item['year']) == year]
-            if not group or group[0]['score'] < minimum_score:
+            if not group or max(item['score'] for item in group) < minimum_score:
                 return []
-            cutoff = group[0]['score'] * relative_drop
-            selected.extend(item for item in group[:per_year] if item['score'] >= cutoff)
+            cutoff = max(item['score'] for item in group) * relative_drop
+            selected.extend(item for item in group[:per_year] if eligible(item, cutoff))
         for fiscal in fiscal_years:
             if not any(re.search(rf'\bfy\s*(?:20)?{fiscal[2:]}\b', item['content'], re.IGNORECASE)
                        for item in selected):
@@ -133,6 +150,7 @@ def temporal_evidence_instruction(query):
         f'Requested fiscal periods: {fiscal}. Report publication year is not fiscal year. '
         'Use only explicitly labelled fiscal periods and units in the evidence. '
         'Do not substitute a different year or treat a future target as a realized result. '
+        'A row for a different metric or geographic scope must never stand in for the requested value. '
         'If any requested period or metric is missing or ambiguous, state that it cannot '
         'be verified; do not infer a value. For comparisons, verify both periods separately.'
     )

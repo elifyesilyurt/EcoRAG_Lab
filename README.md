@@ -7,13 +7,13 @@
 [![Embeddings](https://img.shields.io/badge/Embedding-nomic--embed--text--v1.5-008080?style=for-the-badge)](https://huggingface.co/nomic-ai/nomic-embed-text-v1.5)
 [![Accuracy](https://img.shields.io/badge/Math_Accuracy-100%25_PAL-brightgreen?style=for-the-badge)]()
 [![Zero Hallucination](https://img.shields.io/badge/Hallucination-0.00%25_Guaranteed-success?style=for-the-badge)]()
-[![Release](https://img.shields.io/badge/Release-v2.0.0-007ACC?style=for-the-badge&logo=github)](https://github.com/elifyesilyurt/Microsoft-EcoRAG-Lab/releases/tag/v2.0.0)
-[![CI](https://img.shields.io/badge/CI-Passing-brightgreen?style=for-the-badge&logo=githubactions)](https://github.com/elifyesilyurt/Microsoft-EcoRAG-Lab/actions)
+[![Release](https://img.shields.io/badge/Release-v2.0.0-007ACC?style=for-the-badge&logo=github)](https://github.com/elifyesilyurt/EcoRAG_Lab/releases/tag/v2.0.0)
+[![CI](https://img.shields.io/badge/CI-Passing-brightgreen?style=for-the-badge&logo=githubactions)](https://github.com/elifyesilyurt/EcoRAG_Lab/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
 
 **Production-Grade, Zero-Hallucination On-Device Sustainability RAG & Deterministic ESG Engine**
 
-*Built on Microsoft Foundry Local (`phi-4-mini`) · Covering 2024, 2025 & 2026 Environmental Sustainability Reports (1,207 Chunks)*
+*Built on Microsoft Foundry Local (`phi-4-mini`) · Covering 2024, 2025 & 2026 Environmental Sustainability Reports (1,581 Chunks)*
 
 [🇬🇧 English Documentation](README.md) | [🇹🇷 Türkçe Dokümantasyon](README_TR.md)
 
@@ -22,6 +22,9 @@
 ---
 
 
+
+
+> Current development branch: `fix/ecorag-reliability`. 104 offline tests pass. The index includes three reports and the 2026 data fact sheet; the historical benchmark scores below have not been rerun against the rebuilt index. See [INGESTION_RELIABILITY.md](INGESTION_RELIABILITY.md) for source and rebuild checks.
 
 ## 📸 Visual Showcase & User Interface
 
@@ -80,16 +83,16 @@ The end-to-end data processing, ingestion, indexing, and deterministic inference
 ```mermaid
 graph TD
     subgraph INGESTION["📄 1. Advanced PDF Ingestion Pipeline (ingest_all_reports.py)"]
-        PDF["Official PDF Reports<br/>(2024, 2025, 2026 - 244 Pages)"] --> PLUMB["pdfplumber Ingestion Engine"]
+        PDF["Official PDF Reports<br/>(2024, 2025, 2026 - 272 Pages)"] --> PLUMB["pdfplumber Ingestion Engine"]
         PLUMB --> UNREV["Vertical/Reversed Digit Un-Reverser<br/>(000,662,31 ➔ 13,266,000)"]
         UNREV --> SPLIT{"Content Layout Detector"}
-        SPLIT -->|Structured Tables| TAB["Dual-Representation Table Parser<br/>• Markdown Matrix<br/>• Row-centric Key-Value Pairs"]
+        SPLIT -->|Structured Tables| TAB["Source-Aware Table Rows<br/>• Metric / Unit / Fiscal Period<br/>• Ambiguous Structure Guard"]
         SPLIT -->|Infographics / Charts| VIS["Visual Reference Guard<br/>[⚠ VISUAL REFERENCE] Tagging<br/>+ Verified Table Injection"]
         SPLIT -->|Narrative Body Text| TEXT["Boundary-Aligned Splitter<br/>(900 Chars / 150 Overlap<br/>Sentence-Snapping Engine)"]
         TAB --> EMB["nomic-embed-text-v1.5<br/>(768-dim, Normalized)"]
         VIS --> EMB
         TEXT --> EMB
-        EMB --> DB[("SQLite Vector DB<br/>rag_storage.db (1,207 Chunks)")]
+        EMB --> DB[("SQLite Vector DB<br/>rag_storage.db (1,581 Chunks)")]
     end
 
     subgraph RUNTIME["⚙️ 2. Real-Time Execution Engine (app.py)"]
@@ -126,7 +129,7 @@ graph TD
 ### B. `CHUNK_OVERLAP = 150` Characters & Boundary Alignment
 Rather than blind character slicing (`text[-150:]`), the custom `extract_clean_overlap()` algorithm in [ingest_all_reports.py](ingest_all_reports.py) enforces natural linguistic boundaries:
 * **Sentence Snapping:** Scans backwards to anchor on punctuation (`.\n`, `. `, `!\n`, `?\n`) or capital word boundaries.
-* **Measured Quality Jump (Across 1,207 Chunks):**
+* **Measured Quality Jump (Across 1,207 Chunks):** Historical measurement; not rerun on the rebuilt index.
   * Clean sentence start rate: jumped from **28.35% to 97.18%** (broken lowercase starts plunged from 70.59% to 2.82%).
   * Clean sentence end rate: jumped from **28.64% to 98.59%**.
   * Table header and key-value mapping retention: **100%**.
@@ -143,7 +146,7 @@ Rather than blind character slicing (`text[-150:]`), the custom `extract_clean_o
 The system isolates data ingestion, deterministic computation, and SLM synthesis into modular, decoupled layers:
 
 ```
-├── ingest_all_reports.py      # PDF Parsing, Coordinate Un-Reversing, Dual-Representation Chunking
+├── ingest_all_reports.py      # PDF Parsing, Coordinate Un-Reversing, Source-Aware Row Chunking
 ├── esg_tables.py              # PAL Deterministic Pandas DataFrames (Scope 1/2/3, CDR, Water, Waste)
 ├── dynamic_math_engine.py     # Program-of-Thoughts (PoT) & Sandboxed AST Python ALU Executor
 ├── extraction_pipeline.py     # Pydantic Schemas, Deterministic Resolver & Safety Guardrail
@@ -188,16 +191,17 @@ print(f"5-Year Emissions Delta: +{delta_pct:.2f}%")
 
 ---
 
-## 📚 4. Multi-Year Report Scope (1,207 Chunks)
+## 📚 4. Multi-Year Report Scope (1,581 Chunks)
 
-The system indexes **3 official Microsoft Environmental Sustainability Reports**:
+The system indexes **3 official Microsoft Environmental Sustainability Reports and the 2026 Environmental Data Fact Sheet**:
 
 | Document Name | Pages | Chunks | Key Coverage Areas |
 |---|---|---|---|
-| `2026-Microsoft-Environmental-Sustainability-Report-PDF.pdf` | 66 | **286 Chunks** | 2026 commitments, regional datacenter energy, AI infrastructure & supply chain |
-| `Microsoft_2025_Sustainability_Report.pdf` | 90 | **475 Chunks** | FY25 Scope 1/2/3 tables, Carbon Removal Table 3, Water Table 1, Energy accounting |
-| `Microsoft_2024_Sustainability_Report.pdf` | 88 | **446 Chunks** | FY20 baseline comparisons, FY23 historical data, UL 2799 Zero Waste certifications |
-| **Total Production Index** | **244 Pages** | **1,207 Chunks** | **SQLite WAL Vector Database (`rag_storage.db`)** |
+| `2026-Microsoft-Environmental-Sustainability-Report-PDF.pdf` | 66 | **298 Chunks** | 2026 commitments, regional datacenter energy, AI infrastructure & supply chain |
+| `Microsoft_2025_Sustainability_Report.pdf` | 90 | **486 Chunks** | FY25 Scope 1/2/3 tables, Carbon Removal Table 3, Water Table 1, Energy accounting |
+| `Microsoft_2024_Sustainability_Report.pdf` | 88 | **488 Chunks** | FY20 baseline comparisons, FY23 historical data, UL 2799 Zero Waste certifications |
+| `Microsoft_2026_Environmental_Data_Fact_Sheet.pdf` | 28 | **309 Chunks** | Source-audited carbon, energy and water inventory tables |
+| **Total Production Index** | **272 Pages** | **1,581 Chunks** | **SQLite WAL Vector Database (`rag_storage.db`)** |
 
 ---
 
@@ -210,8 +214,8 @@ The system indexes **3 official Microsoft Environmental Sustainability Reports**
 ### Setup
 ```bash
 # 1. Clone repository
-git clone https://github.com/elifyesilyurt/Microsoft-EcoRAG-Lab.git
-cd Microsoft-EcoRAG-Lab
+git clone --branch fix/ecorag-reliability https://github.com/elifyesilyurt/EcoRAG_Lab.git
+cd EcoRAG_Lab
 
 # 2. Setup virtual environment
 python -m venv .venv
@@ -267,11 +271,12 @@ python generate_and_run_500_benchmark.py
 ├── benchmark_500_dataset.json         # 500 questions, ground-truth references & answers
 ├── benchmark_500_results.json         # Detailed latency, faithfulness & execution logs
 ├── run_benchmarks.py                  # 50-question CLI benchmark suite
-├── rag_storage.db                     # SQLite vector database with 1044 pure chunks
+├── rag_storage.db                     # SQLite vector database with 1581 indexed chunks
 ├── docs/                              # Official source Microsoft Sustainability PDF reports
 │   ├── 2026-Microsoft-Environmental-Sustainability-Report-PDF.pdf
 │   ├── Microsoft_2025_Sustainability_Report.pdf
-│   └── Microsoft_2024_Sustainability_Report.pdf
+│   ├── Microsoft_2024_Sustainability_Report.pdf
+│   └── Microsoft_2026_Environmental_Data_Fact_Sheet.pdf
 ├── images/                            # UI screenshots & architectural diagrams
 ├── requirements.txt                   # Python dependencies
 ├── workshop-reference/                # Archived Foundry Local foundational workshop labs & samples

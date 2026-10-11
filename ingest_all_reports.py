@@ -1,12 +1,10 @@
 import os
 import glob
 import re
-import json
-import sqlite3
 from typing import List, Dict, Any, Optional
 import pdfplumber
-from sentence_transformers import SentenceTransformer
-from esg_tables import get_verified_water_context
+from esg_tables import get_carbon_emissions_df, get_water_metrics_df, get_energy_metrics_df
+from ingestion_core import table_row_evidence, source_hash, replace_index
 
 DB_PATH = "rag_storage.db"
 EMBEDDING_MODEL_NAME = "nomic-ai/nomic-embed-text-v1.5"
@@ -139,6 +137,9 @@ def classify_visual_content(text: str) -> Optional[str]:
       - "[VISUAL DATA FRAGMENT]" : grafik etiket/lejand artığı (bağlamsız sayılar)
       - None                     : normal metin
     """
+    # Standalone axis labels identify charts even without the word "chart".
+    if len(re.findall(r"(?m)^\s*\d+(?:[.,]\d+)?[KMB]\s*$", text)) >= 2:
+        return "[VISUAL DATA FRAGMENT]"
     # Grafik etiket artığı: bağlamsız yüzde + sayı dizisi
     if _VISUAL_REF_PATTERNS[1].search(text) or _VISUAL_REF_PATTERNS[2].search(text):
         return "[VISUAL DATA FRAGMENT]"
@@ -265,52 +266,8 @@ def format_chunk_with_metadata(
 
 
 def table_to_structured_reprs(table: List[List[Any]], min_length: int = MIN_CHUNK_LENGTH) -> List[str]:
-    """
-    2D PDF tablosunu hem Markdown tablosuna hem de Row-Centric Key-Value formatına çevirir.
-    Çok uzun tabloları başlığı koruyarak mantıklı satır gruplarına böler.
-    200 karakterden kısa mikro-çöp parçaları eler.
-    """
-    cleaned = []
-    for row in table:
-        cleaned_row = [re.sub(r'\s+', ' ', str(cell or '')).replace('|', '/').strip() for cell in row]
-        if any(cleaned_row):
-            cleaned.append(cleaned_row)
-
-    if len(cleaned) < 2:
-        return []
-
-    headers = cleaned[0]
-    if not any(headers) or all(len(h) == 0 for h in headers):
-        return []
-
-    rows = cleaned[1:]
-    chunks: List[str] = []
-    rows_per_batch = 8
-
-    for batch_idx in range(0, len(rows), rows_per_batch):
-        batch_rows = rows[batch_idx:batch_idx + rows_per_batch]
-
-        md_header = "| " + " | ".join(headers) + " |"
-        md_sep = "| " + " | ".join(["---"] * len(headers)) + " |"
-        md_body = ["| " + " | ".join(r) + " |" for r in batch_rows]
-        md_table = "\n".join([md_header, md_sep] + md_body)
-
-        kv_lines = ["\n[Structured Row Mappings]:"]
-        for row in batch_rows:
-            row_title = row[0] if len(row) > 0 and row[0] else "Metric"
-            row_details = []
-            for h, val in zip(headers[1:], row[1:]):
-                if val and val not in ["-", "N/A", "n/a", ""]:
-                    col_name = h if h else "Value"
-                    row_details.append(f"{col_name}: {val}")
-            if row_details:
-                kv_lines.append(f"- **{row_title}** -> ({', '.join(row_details)})")
-
-        table_content = md_table + "\n" + "\n".join(kv_lines)
-        if len(table_content.strip()) >= min_length:
-            chunks.append(table_content.strip())
-
-    return chunks
+    """Compatibility entry point; valid table rows are not narrative micro-garbage."""
+    return table_row_evidence(table, TARGET_CHUNK_SIZE)
 
 
 def extract_year_from_filename(filename: str) -> str:
@@ -338,6 +295,9 @@ def process_pdf(pdf_path: str) -> List[Dict[str, Any]]:
     """Tek bir PDF dosyasını okur, tabloları ve gövde metinlerini hiyerarşik ve temiz olarak chunk'lara böler."""
     doc_title = os.path.basename(pdf_path)
     year = extract_year_from_filename(doc_title)
+    digest = source_hash(pdf_path)
+    if year == "Unknown":
+        raise ValueError(f"Missing publication year: {doc_title}")
     chunks: List[Dict[str, Any]] = []
     table_count = 0
     nav_cleaned_count = 0
@@ -348,44 +308,7 @@ def process_pdf(pdf_path: str) -> List[Dict[str, Any]]:
         for page_idx, page in enumerate(pdf.pages, start=1):
             raw_text = page.extract_text() or ""
             raw_text = fix_reversed_chart_text(raw_text)
-
-            # ── Görsel Grafiklerin Açık Markdown Tablosuna Dönüştürülmesi ────
-            if "2026" in doc_title and page_idx == 6:
-                table_p6 = (
-                    "\n\n### [VERIFIED TABLE] Microsoft FY20-FY25 GHG Emissions & Interventions (2026 Report p.6)\n"
-                    "| Fiscal Year | Actual Reported Emissions (Fiili Raporlanan) | Estimated Without Interventions (Müdahalesiz Tahmini) | Avoided Emissions (Engellenen Fark) |\n"
-                    "|---|---|---|---|\n"
-                    "| FY20 | 12M mtCO2e | 12M mtCO2e | 0M mtCO2e |\n"
-                    "| FY21 | 14M mtCO2e | 15M mtCO2e | 1M mtCO2e |\n"
-                    "| FY22 | 15M mtCO2e | 18M mtCO2e | 3M mtCO2e |\n"
-                    "| FY23 | 16M mtCO2e | 22M mtCO2e | 6M mtCO2e |\n"
-                    "| FY24 | 17M mtCO2e | 28M mtCO2e | 11M mtCO2e |\n"
-                    "| FY25 | 20M mtCO2e (20,000,000) | 34M mtCO2e (34,000,000) | 14M mtCO2e (14,000,000) |\n"
-                )
-                raw_text += table_p6
-
-            if "2026" in doc_title and page_idx == 25:
-                # Share audited units/values with UI; do not label chart estimates verified.
-                raw_text += get_verified_water_context()
-
-            if "2026" in doc_title and page_idx == 54:
-                table_p54 = (
-                    "\n\n### [VERIFIED TABLE] Microsoft FY25 Scope 3 Emissions by Source Breakdown (2026 Report p.54)\n"
-                    "| Category | Category Name | FY25 Scope 3 Share (%) |\n"
-                    "|---|---|---|\n"
-                    "| Category 1 (A) | Purchased Goods and Services | 25.28% |\n"
-                    "| Category 2 (B) | Capital Goods | 44.57% |\n"
-                    "| Category 3 (C) | Fuel- and Energy-Related Activities | 5.30% |\n"
-                    "| Category 4 (D) | Upstream Transportation and Distribution | 3.66% |\n"
-                    "| Category 5 (E) | Business Travel | 1.00% |\n"
-                    "| Category 6 (F) | Employee Commuting | 1.40% |\n"
-                    "| Category 11 (G) | Use of Sold Products | 4.07% |\n"
-                    "| Category 5 (H) | Waste Generated in Operations | 0.07% |\n"
-                    "| Category 9 | Downstream Transportation and Distribution | 0.42% |\n"
-                    "| Category 12 | End-of-Life Treatment of Sold Products | 0.01% |\n"
-                    "| Category 13 | Downstream Leased Assets | 0.03% |\n"
-                )
-                raw_text += table_p54
+            page_visual_tag = classify_visual_content(raw_text)
 
             # ── 1. Yapısal Tablo Çıkarımı ────────────────────────────────────
             tables = page.extract_tables()
@@ -399,7 +322,7 @@ def process_pdf(pdf_path: str) -> List[Dict[str, Any]]:
                         "year": year,
                         "title": f"{doc_title} (p.{page_idx})",
                         "content": formatted,
-                        "type": "table"
+                        "type": "table", "page": page_idx, "source_sha256": digest
                     })
                     table_count += 1
 
@@ -421,12 +344,17 @@ def process_pdf(pdf_path: str) -> List[Dict[str, Any]]:
                     formatted = format_chunk_with_metadata(
                         doc_title, year, page_idx, t_chunk, is_table=False
                     )
+                    visual_tag = page_visual_tag or classify_visual_content(t_chunk)
+                    if visual_tag:
+                        formatted = inject_visual_tag(formatted, visual_tag)
                     chunks.append({
                         "year": year,
                         "title": f"{doc_title} (p.{page_idx})",
                         "content": formatted,
-                        "type": "text"
+                        "type": "text", "page": page_idx, "source_sha256": digest
                     })
+
+    chunks.extend(audited_source_chunks(doc_title, digest))
 
     print(
         f"  -> {doc_title}: {total_pages} sayfadan {len(chunks)} chunk üretildi "
@@ -435,86 +363,72 @@ def process_pdf(pdf_path: str) -> List[Dict[str, Any]]:
     return chunks
 
 
-def run_ingestion():
-    """Tüm PDF'leri işler, embedding'leri üretir ve rag_storage.db veritabanını günceller."""
-    pdf_files = sorted(glob.glob("docs/*.pdf"))
+def audited_source_chunks(doc_title, digest):
+    """Audited source tables, attached to the actual fact sheet PDF/pages.
+
+    This does not infer missing PDF cells. Values share the source-audited UI
+    tables and retain the units after the previously verified conversions.
+    """
+    source_versions = {
+        "Microsoft_2026_Environmental_Data_Fact_Sheet.pdf":
+            "0fd180837df00b3427c3eae484a492224b8f18c381e82a2aed98b04553a197f6",
+        "2026-Microsoft-Environmental-Sustainability-Report-PDF.pdf":
+            "20918e9fc4a02241f55d12f1f5b6228a832b706499f9963a1a3f91e3d3e693ba",
+    }
+    if doc_title not in source_versions:
+        return []
+    if digest != source_versions[doc_title]:
+        raise ValueError(f"Audited PDF source version changed: {doc_title}")
+    water = get_water_metrics_df()
+    annual = water['Metric'] == "Water Replenishment (million m3)"
+    if "Fact_Sheet" in doc_title:
+        sources = ((get_carbon_emissions_df(), 3, "mtCO2e"),
+                   (get_energy_metrics_df(), 6, None), (water[~annual], 7, None))
+    else:
+        sources = ((water[annual], 25, None),)
+    chunks = []
+    for frame, page, default_unit in sources:
+        fiscal = [name for name in frame.columns if name.startswith("FY")]
+        table = [["Metric (Unit)"] + [name.replace("_Baseline", "") for name in fiscal]]
+        for _, row in frame.iterrows():
+            unit = row.get("Unit", default_unit)
+            values = [None if row[name] != row[name] else row[name] for name in fiscal]
+            table.append([f"{row['Metric']} ({unit})"] + values)
+        for content in table_row_evidence(table, TARGET_CHUNK_SIZE):
+            chunks.append({
+                "year": "2026", "title": f"{doc_title} (p.{page})",
+                "content": format_chunk_with_metadata(doc_title, "2026", page,
+                    "[SOURCE AUDITED TABLE]\n" + content, is_table=True),
+                "type": "audited_table", "page": page, "source_sha256": digest,
+            })
+    return chunks
+
+
+def run_ingestion(pdf_files=None, db_path=DB_PATH, embedder=None):
+    """Build all sources/vectors first; atomically publish a validated corpus."""
+    pdf_files = sorted(glob.glob("docs/*.pdf") if pdf_files is None else pdf_files)
     if not pdf_files:
-        print("[HATA] docs/ dizininde PDF dosyası bulunamadı!")
-        return
-
-    print(f"Tespit edilen PDF dosyaları ({len(pdf_files)} adet): {[os.path.basename(p) for p in pdf_files]}")
-
-    all_chunks: List[Dict[str, Any]] = []
+        raise ValueError("No PDF sources found")
+    all_chunks = []
+    manifest = []
     for pdf_path in pdf_files:
-        all_chunks.extend(process_pdf(pdf_path))
-
-    if not all_chunks:
-        print("[HATA] Hiçbir geçerli chunk üretilemedi!")
-        return
-
-    print(f"\n[ÖZET] Toplam Ayıklanan Chunk Sayısı: {len(all_chunks)}")
-
-    lengths = [len(c["content"]) for c in all_chunks]
-    print(f"  - Boyut İstatistikleri: Min = {min(lengths)} karakter, Max = {max(lengths)} karakter, Ortalama = {sum(lengths) // len(lengths)} karakter")
-
-    type_counts: Dict[str, int] = {}
-    for c in all_chunks:
-        type_counts[c["type"]] = type_counts.get(c["type"], 0) + 1
-    for t, cnt in sorted(type_counts.items()):
-        print(f"  - [{t}]: {cnt} chunk")
-
-    macro_count = sum(1 for l in lengths if l > 2000)
-    micro_count = sum(1 for l in lengths if l < MIN_CHUNK_LENGTH)
-    print(f"  - 2000 karakterden büyük (Macro-Chunk) adedi: {macro_count}")
-    print(f"  - {MIN_CHUNK_LENGTH} karakterden küçük (Micro-Garbage) adedi: {micro_count}")
-
-    print(f"\nEmbedding modeli yükleniyor: {EMBEDDING_MODEL_NAME}...")
-    embedder = SentenceTransformer(EMBEDDING_MODEL_NAME, trust_remote_code=True)
-
-    print("Batch vektör embedding'leri üretiliyor (normalize=True)...")
-    # nomic-embed-text-v1.5: retrieval görevi için 'search_document:' prefix
-    contents = [f"search_document: {c['content']}" for c in all_chunks]
+        chunks = process_pdf(pdf_path)
+        if not chunks:
+            raise ValueError(f"No evidence extracted from {pdf_path}")
+        all_chunks.extend(chunks)
+        manifest.append({"filename": os.path.basename(pdf_path), "sha256": source_hash(pdf_path)})
+    if embedder is None:
+        # Import/load the heavyweight model only when actual indexing is requested.
+        from sentence_transformers import SentenceTransformer
+        embedder = SentenceTransformer(EMBEDDING_MODEL_NAME, trust_remote_code=True)
     embeddings = embedder.encode(
-        contents,
-        batch_size=16,
-        show_progress_bar=True,
-        normalize_embeddings=True
+        [f"search_document: {chunk['content']}" for chunk in all_chunks],
+        batch_size=16, show_progress_bar=True, normalize_embeddings=True,
     )
-
-    print(f"SQLite veritabanına ({DB_PATH}) kaydediliyor...")
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-
-    cursor.execute("PRAGMA journal_mode = WAL;")
-    cursor.execute("PRAGMA synchronous = NORMAL;")
-
-    cursor.execute("DROP TABLE IF EXISTS documents")
-    cursor.execute("""
-        CREATE TABLE documents (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            year TEXT,
-            title TEXT,
-            content TEXT,
-            embedding TEXT
-        )
-    """)
-    conn.commit()
-
-    insert_records = [
-        (c["year"], c["title"], c["content"], json.dumps(emb.tolist()))
-        for c, emb in zip(all_chunks, embeddings)
-    ]
-
-    cursor.executemany(
-        "INSERT INTO documents (year, title, content, embedding) VALUES (?, ?, ?, ?)",
-        insert_records
-    )
-    conn.commit()
-    conn.close()
-
-    print(f"\n[BAŞARILI] Ingestion tamamlandı! {len(insert_records)} adet chunk {DB_PATH} veritabanına indekslendi.")
+    count = replace_index(db_path, all_chunks, embeddings, EMBEDDING_MODEL_NAME, manifest)
+    print(f"[SUCCESS] Published {count} chunks to {db_path}")
+    return count
 
 
 if __name__ == "__main__":
     run_ingestion()
-

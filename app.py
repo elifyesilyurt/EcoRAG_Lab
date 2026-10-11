@@ -28,6 +28,7 @@ from extraction_pipeline import (
     DeterministicResolver
 )
 from query_routing import is_esg_query, classify_esg_intent
+from ingestion_core import numeric_evidence_allowed, build_evidence_context, select_evidence_chunks, prioritize_audited_evidence, INDEX_VERSION
 from temporal_scope import (
     temporal_intent, retrieval_report_years, select_temporal_chunks,
     temporal_evidence_instruction, requested_fiscal_years, temporal_clarification,
@@ -771,18 +772,29 @@ def search_context_hybrid(query: str, year_filter: Optional[str] = None, scope_q
 
     query_vector = embedder.encode(f"search_query: {query}")
     conn = sqlite3.connect(DB_PATH)
+    conn.execute("BEGIN")  # Read rows and their index version from one snapshot.
     cursor = conn.cursor()
+    columns = {column[1] for column in conn.execute("PRAGMA table_info(documents)")}
+    type_column = "chunk_type" if "chunk_type" in columns else "'legacy'"
+    fields = f"id, year, title, content, embedding, {type_column}"
 
     if report_years:
         placeholders = ",".join("?" for _ in report_years)
         cursor.execute(
-            f"SELECT id, year, title, content, embedding FROM documents WHERE year IN ({placeholders})",
+            f"SELECT {fields} FROM documents WHERE year IN ({placeholders})",
             report_years,
         )
     else:
-        cursor.execute("SELECT id, year, title, content, embedding FROM documents")
+        cursor.execute(f"SELECT {fields} FROM documents")
 
     rows = cursor.fetchall()
+    try:
+        index_version = conn.execute(
+            "SELECT value FROM index_metadata WHERE key = 'index_version'"
+        ).fetchone()
+        legacy_index = not index_version or index_version[0] != INDEX_VERSION
+    except sqlite3.OperationalError:
+        legacy_index = True
     conn.close()
 
     if not rows:
@@ -809,7 +821,13 @@ def search_context_hybrid(query: str, year_filter: Optional[str] = None, scope_q
 
     scores = []
     for r in rows:
-        c_id, year, title, content, emb_json = r
+        c_id, year, title, content, emb_json, chunk_type = r
+        if not numeric_evidence_allowed(content):
+            continue
+        if (legacy_index and "2026-Microsoft-Environmental-Sustainability-Report-PDF.pdf" in title
+                and any(f"(p.{page})" in title for page in (6, 25, 54))):
+            # Old chart injections can continue into chunks without their tag.
+            continue
         doc_vector = np.array(json.loads(emb_json))
         norm_q = np.linalg.norm(query_vector)
         norm_d = np.linalg.norm(doc_vector)
@@ -821,6 +839,7 @@ def search_context_hybrid(query: str, year_filter: Optional[str] = None, scope_q
         
         scores.append({
             "id": c_id,
+            "chunk_type": chunk_type,
             "year": str(year).strip(),
             "title": title,
             "content": content,
@@ -835,6 +854,7 @@ def search_context_hybrid(query: str, year_filter: Optional[str] = None, scope_q
     if max_score < MIN_SCORE_FLOOR:
         return [], max_score
 
+    scores = prioritize_audited_evidence(scores, query, MIN_SCORE_FLOOR)
     fiscal_years = requested_fiscal_years(scope_query)
     sampling_years = report_years
     # Preserve broad multi-report coverage for undated narrative comparisons.
@@ -2994,13 +3014,15 @@ with tab_chat:
                             else "Extracting data & calculating metrics via Dynamic PAL Engine"
                         )
                         chunks, max_score = search_context_hybrid(query_to_run, year_filter=active_year_filter)
+                        chunks = select_evidence_chunks(
+                            chunks, scope_query=query_to_run, year_filter=active_year_filter
+                        )
                         if not chunks or max_score < MIN_SCORE_FLOOR:
                             print("  -> Benzerlik Eşiği Altında: Kayıt Bulunamadı", flush=True)
                             stream_gen = stream_static_text(not_found_msg)
                         else:
                             print("  [3/3] Yerel Model PoT Matematik Kodu Çıkarıyor...", flush=True)
-                            context_chunks = [c["content"] for c in chunks]
-                            context_str = "\n\n".join(context_chunks)
+                            context_str = build_evidence_context(chunks)
                             pot_prompt = (f"{temporal_evidence_instruction(query_to_run)}\n\n"
                                           f"Context:\n{context_str}\n\nQuestion: {query_to_run}\n\nExecutable Python code:")
                             code_raw = query_foundry(POT_EXTRACTION_SYSTEM_PROMPT, pot_prompt, temperature=0.0)
@@ -3030,15 +3052,17 @@ with tab_chat:
                                 if alt_chunks and (not chunks or alt_score > max_score):
                                     chunks, max_score = alt_chunks, alt_score
 
+                            chunks = select_evidence_chunks(
+                                chunks, scope_query=query_to_run, year_filter=active_year_filter
+                            )
                             print(f"  -> Arama Tamamlandı ({len(chunks)} chunk, En Yüksek Skor: {max_score:.4f})", flush=True)
                             if not chunks or max_score < MIN_SCORE_FLOOR:
                                 print("  -> Benzerlik Eşiği Altında: Kayıt Bulunamadı", flush=True)
                                 stream_gen = stream_static_text(not_found_msg)
                             else:
                                 print("  [3/3] Yerel Phi-4-mini Tek Geçişli Akış Sentezi Başlatılıyor...", flush=True)
-                                # Bağlam boyutu kontrolü: Her chunk'ı 500 karakterle sınırla (phi-4-mini context overflow önleme)
-                                context_chunks = [c["content"][:500] for c in chunks]
-                                context_str = "\n---\n".join(context_chunks)
+                                # Whole evidence chunks preserve row/year/unit and provenance.
+                                context_str = build_evidence_context(chunks)
                                 show_live_status(status_placeholder, "✍️ Yanıt oluşturuluyor..." if target_lang == "tr" else "✍️ Generating response...")
 
                                 if target_lang == "tr":

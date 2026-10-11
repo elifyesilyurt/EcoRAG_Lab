@@ -7,8 +7,9 @@ from unittest.mock import patch
 
 import pandas as pd
 
-from esg_tables import get_energy_metrics_df, get_water_metrics_df, get_water_replenishment_projects_df, get_verified_water_context
+from esg_tables import get_energy_metrics_df, get_water_metrics_df, get_water_replenishment_projects_df
 from test_baseline_regressions import load_app_functions
+from ingest_all_reports import audited_source_chunks
 
 ROOT = Path(__file__).resolve().parent
 FIXTURE = json.loads(ROOT.joinpath('tests/fixtures/resource_metrics_2026.json').read_text())
@@ -104,17 +105,20 @@ class TestResourceConsumers(unittest.TestCase):
         self.assertEqual(card['value'], "water_kpi['value']")
         self.assertEqual(card['delta'], "water_kpi['delta']")
 
-    def test_ingestion_uses_shared_verified_context(self):
-        context = get_verified_water_context()
-        self.assertIn('13.266', context)
-        self.assertIn('8.17', context)
-        self.assertIn('14.278782', context)
-        self.assertIn('million m3', context)
-        self.assertIn('Table 8', context)
-        tree = ast.parse(ROOT.joinpath('ingest_all_reports.py').read_text())
-        calls = [node for node in ast.walk(tree) if isinstance(node, ast.Call)
-                 and isinstance(node.func, ast.Name) and node.func.id == 'get_verified_water_context']
-        self.assertEqual(len(calls), 1)
+    def test_ingestion_uses_shared_source_audited_water_rows(self):
+        title = "Microsoft_2026_Environmental_Data_Fact_Sheet.pdf"
+        digest = FIXTURE['source_pdf_sha256']
+        chunks = audited_source_chunks(title, digest)
+        inventory = '\n'.join(c['content'] for c in chunks if c['page'] == 7)
+        self.assertIn('13.266', inventory)
+        self.assertIn('8.17', inventory)
+        self.assertIn('million m3', inventory)
+        self.assertNotIn('Water Replenishment', inventory)
+        frame = get_water_metrics_df()
+        frame.loc[frame['Metric'] == 'Water Withdrawal (million m3)', 'FY24'] = 10.123
+        with patch('ingest_all_reports.get_water_metrics_df', return_value=frame):
+            inventory = '\n'.join(c['content'] for c in audited_source_chunks(title, digest) if c['page'] == 7)
+            self.assertIn('FY24: 10.123', inventory)
 
     def test_energy_summary_uses_changed_values_and_missing_marker(self):
         frame = get_energy_metrics_df()

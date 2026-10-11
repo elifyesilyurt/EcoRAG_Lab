@@ -7,19 +7,22 @@
 [![Embeddings](https://img.shields.io/badge/Embedding-nomic--embed--text--v1.5-008080?style=for-the-badge)](https://huggingface.co/nomic-ai/nomic-embed-text-v1.5)
 [![Accuracy](https://img.shields.io/badge/Matematik_Doğruluğu-%25100_PAL-brightgreen?style=for-the-badge)]()
 [![Zero Hallucination](https://img.shields.io/badge/Halüsinasyon-%250.00_Garantili-success?style=for-the-badge)]()
-[![Release](https://img.shields.io/badge/Sürüm-v2.0.0-007ACC?style=for-the-badge&logo=github)](https://github.com/elifyesilyurt/Microsoft-EcoRAG-Lab/releases/tag/v2.0.0)
-[![CI](https://img.shields.io/badge/CI-Geçti-brightgreen?style=for-the-badge&logo=githubactions)](https://github.com/elifyesilyurt/Microsoft-EcoRAG-Lab/actions)
+[![Release](https://img.shields.io/badge/Sürüm-v2.0.0-007ACC?style=for-the-badge&logo=github)](https://github.com/elifyesilyurt/EcoRAG_Lab/releases/tag/v2.0.0)
+[![CI](https://img.shields.io/badge/CI-Geçti-brightgreen?style=for-the-badge&logo=githubactions)](https://github.com/elifyesilyurt/EcoRAG_Lab/actions)
 [![License: MIT](https://img.shields.io/badge/Lisans-MIT-yellow.svg?style=for-the-badge)](LICENSE)
 
 **Üretim Standardında, Sıfır Halüsinasyonlu ve Tamamen Cihaz Üzerinde Çalışan Deterministik Sürdürülebilirlik & ESG Analiz Motoru**
 
-*Microsoft Foundry Local (`phi-4-mini`) Üzerinde Geliştirildi · 2024, 2025 ve 2026 Çevresel Sürdürülebilirlik Raporlarını Kapsar (1.207 Chunk)*
+*Microsoft Foundry Local (`phi-4-mini`) Üzerinde Geliştirildi · 2024, 2025 ve 2026 Çevresel Sürdürülebilirlik Raporlarını Kapsar (1.581 Chunk)*
 
 [🇬🇧 English Documentation](README.md) | [🇹🇷 Türkçe Dokümantasyon](README_TR.md)
 
 </div>
 
 ---
+
+
+> Güncel çalışma branch’i: `fix/ecorag-reliability`. 104 çevrimdışı test geçmektedir. İndeks üç rapor ve 2026 veri föyünden oluşur; aşağıdaki eski benchmark skorları yeni indeksle henüz tekrar ölçülmemiştir. Kaynak ve yeniden indeksleme kontrolleri için [INGESTION_RELIABILITY.md](INGESTION_RELIABILITY.md) dosyasına bakın.
 
 ## 🎥 Canlı Video Demosu (YouTube)
 
@@ -92,16 +95,16 @@ Sistemin uçtan uca veri işleme, indeksleme, arama ve deterministik yanıt üre
 ```mermaid
 graph TD
     subgraph INGESTION["📄 1. Gelişmiş PDF İşleme Hattı (ingest_all_reports.py)"]
-        PDF["Resmi PDF Raporları<br/>(2024, 2025, 2026 - 244 Sayfa)"] --> PLUMB["pdfplumber Ayrıştırıcı"]
+        PDF["Resmi PDF Raporları<br/>(2024, 2025, 2026 - 272 Sayfa)"] --> PLUMB["pdfplumber Ayrıştırıcı"]
         PLUMB --> UNREV["Dikey/Ters Sayı Düzeltme<br/>(000,662,31 ➔ 13,266,000)"]
         UNREV --> SPLIT{"İçerik Tipi Tespiti"}
-        SPLIT -->|Yapısal Tablo| TAB["Çift Temsilli Tablo Çıkarıcı<br/>• Markdown Matrisi<br/>• Satır Bazlı Anahtar-Değer"]
+        SPLIT -->|Yapısal Tablo| TAB["Kaynak Bağlı Tablo Satırları<br/>• Metrik / Birim / Mali Yıl<br/>• Belirsiz Yapı Koruması"]
         SPLIT -->|Görsel / Çizelge| VIS["Görsel Güvenlik Kalkanı<br/>[⚠ VISUAL REFERENCE] Etiketi<br/>ve Doğrulanmış Tablo Enjeksiyonu"]
         SPLIT -->|Gövde Metni| TEXT["Sınır Hizalamalı Parçalayıcı<br/>(900 Karakter / 150 Overlap<br/>Cümle Sonu Kilitlemeli)"]
         TAB --> EMB["nomic-embed-text-v1.5<br/>(768 Boyut, Normalize)"]
         VIS --> EMB
         TEXT --> EMB
-        EMB --> DB[("SQLite Vektör DB<br/>rag_storage.db (1.207 Chunk)")]
+        EMB --> DB[("SQLite Vektör DB<br/>rag_storage.db (1.581 Chunk)")]
     end
 
     subgraph RUNTIME["⚙️ 2. Gerçek Zamanlı Yürütme Hattı (app.py)"]
@@ -138,7 +141,7 @@ graph TD
 ### B. `CHUNK_OVERLAP = 150` Karakter ve Sınır Hizalaması (Boundary Alignment)
 Standart RAG kütüphanelerinin aksine, karakter sınırından körü körüne dilimleme (`text[-150:]`) yapılmaz. Bunun yerine [ingest_all_reports.py](ingest_all_reports.py) içine özel geliştirilen `extract_clean_overlap()` algoritması devreye girer:
 * **Cümle Sonu Kilitlemesi (Snapping):** Dilimleme noktası geriye doğru taranarak tam cümle bitişlerine (`.\n`, `. `, `!\n`, `?\n`) veya büyük harfle başlayan kelime sınırlarına hizalanır.
-* **Ölçülen Kalite Artışı (1.207 Chunk Üzerinde):**
+* **Ölçülen Kalite Artışı (1.207 Chunk Üzerinde):** Bu eski ölçüm, yeni indeks için henüz tekrarlanmadı.
   * Temiz cümle başlangıç oranı: **%28.35'ten %97.18'e çıktı** (Cümle ortası bölünmeler %70.59'dan %2.82'ye geriledi).
   * Temiz cümle bitiş oranı: **%28.64'ten %98.59'a yükseldi**.
   * Başlık ve anahtar-değer bütünlüğü: **%100 korundu**.
@@ -155,7 +158,7 @@ Standart RAG kütüphanelerinin aksine, karakter sınırından körü körüne d
 Sistem; veri çıkarma, doğrulanmış hesaplama ve yapay zeka çıkarımı katmanlarını birbirinden kesin çizgilerle ayıran modüler bir mimariye sahiptir:
 
 ```
-├── ingest_all_reports.py      # PDF Ayrıştırma, Dikey Metin Düzeltme, Çift Temsilli Chunking
+├── ingest_all_reports.py      # PDF Ayrıştırma, Dikey Metin Düzeltme, Kaynak Bağlı Satır Parçalama
 ├── esg_tables.py              # PAL Deterministik Pandas Veri Tabloları (Scope 1/2/3, CDR, Su, Atık)
 ├── dynamic_math_engine.py     # Program-of-Thoughts (PoT) ve Güvenli AST Python ALU Yürütücüsü
 ├── extraction_pipeline.py     # Pydantic Doğrulama Şemaları, Eşleştirici ve Güvenlik Kalkanı
@@ -200,16 +203,17 @@ print(f"5 Yıllık Emisyon Değişimi: +%{delta_pct:.2f}")
 
 ---
 
-## 📚 4. Çok Yıllı Rapor Veri Kapsamı (1.207 Chunk)
+## 📚 4. Çok Yıllı Rapor Veri Kapsamı (1.581 Chunk)
 
 Sistem, Microsoft'un resmi **3 Çevresel Sürdürülebilirlik Raporunu** eksiksiz indeksler:
 
 | Doküman Adı | Sayfa Sayısı | Parça (Chunk) | Temel Kapsam Alanları |
 |---|---|---|---|
-| `2026-Microsoft-Environmental-Sustainability-Report-PDF.pdf` | 66 | **286 Parça** | 2026 taahhütleri, bölgesel veri merkezi enerjisi, AI altyapısı & tedarik zinciri |
-| `Microsoft_2025_Sustainability_Report.pdf` | 90 | **475 Parça** | FY25 Scope 1/2/3 tabloları, Karbon Tablo 3, Su Tablo 1, Enerji muhasebesi |
-| `Microsoft_2024_Sustainability_Report.pdf` | 88 | **446 Parça** | FY20 baz yıl karşılaştırmaları, FY23 geçmiş verileri, UL 2799 Sıfır Atık tesisleri |
-| **Toplam Üretim İndeksi** | **244 Sayfa** | **1.207 Parça** | **SQLite WAL Vektör Veritabanı (`rag_storage.db`)** |
+| `2026-Microsoft-Environmental-Sustainability-Report-PDF.pdf` | 66 | **298 Parça** | 2026 taahhütleri, bölgesel veri merkezi enerjisi, AI altyapısı & tedarik zinciri |
+| `Microsoft_2025_Sustainability_Report.pdf` | 90 | **486 Parça** | FY25 Scope 1/2/3 tabloları, Karbon Tablo 3, Su Tablo 1, Enerji muhasebesi |
+| `Microsoft_2024_Sustainability_Report.pdf` | 88 | **488 Parça** | FY20 baz yıl karşılaştırmaları, FY23 geçmiş verileri, UL 2799 Sıfır Atık tesisleri |
+| `Microsoft_2026_Environmental_Data_Fact_Sheet.pdf` | 28 | **309 Parça** | Kaynak denetimli karbon, enerji ve su envanteri tabloları |
+| **Toplam Üretim İndeksi** | **272 Sayfa** | **1.581 Parça** | **SQLite WAL Vektör Veritabanı (`rag_storage.db`)** |
 
 ---
 
@@ -222,8 +226,8 @@ Sistem, Microsoft'un resmi **3 Çevresel Sürdürülebilirlik Raporunu** eksiksi
 ### Kurulum Adımları
 ```bash
 # 1. Depoyu klonlayın
-git clone https://github.com/elifyesilyurt/Microsoft-EcoRAG-Lab.git
-cd Microsoft-EcoRAG-Lab
+git clone --branch fix/ecorag-reliability https://github.com/elifyesilyurt/EcoRAG_Lab.git
+cd EcoRAG_Lab
 
 # 2. Sanal ortam oluşturun ve etkinleştirin
 python -m venv .venv
@@ -279,11 +283,12 @@ python generate_and_run_500_benchmark.py
 ├── benchmark_500_dataset.json         # 500 soru, referans yanıtlar ve menşe eşleşmeleri
 ├── benchmark_500_results.json         # Anlık gecikme, sadakat ve rota çalışma logları
 ├── run_benchmarks.py                  # 50 soruluk CLI benchmark paketi
-├── rag_storage.db                     # 1044 saf parçalı SQLite vektör veritabanı
+├── rag_storage.db                     # 1581 indekslenmiş parçalı SQLite vektör veritabanı
 ├── docs/                              # Resmi kaynak Microsoft Sürdürülebilirlik PDF raporları
 │   ├── 2026-Microsoft-Environmental-Sustainability-Report-PDF.pdf
 │   ├── Microsoft_2025_Sustainability_Report.pdf
-│   └── Microsoft_2024_Sustainability_Report.pdf
+│   ├── Microsoft_2024_Sustainability_Report.pdf
+│   └── Microsoft_2026_Environmental_Data_Fact_Sheet.pdf
 ├── images/                            # UI ekran görüntüleri ve mimari diyagramlar
 ├── requirements.txt                   # Python bağımlılık listesi
 ├── workshop-reference/                # Arşivlenen Foundry Local temel atölye laboratuvarları ve örnekleri

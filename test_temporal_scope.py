@@ -11,6 +11,7 @@ from typing import Optional
 
 import numpy as np
 
+from ingestion_core import numeric_evidence_allowed, prioritize_audited_evidence, INDEX_VERSION
 from temporal_scope import (
     STATIC_INTENTS, requested_fiscal_years, requested_report_years,
     retrieval_report_years, select_temporal_chunks, temporal_clarification,
@@ -99,6 +100,12 @@ class TestTemporalContracts(unittest.TestCase):
         for term in ('FY24', 'FY25', 'not fiscal year', 'units', 'future target', 'cannot be verified'):
             self.assertIn(term, text)
 
+    def test_shared_period_chunks_do_not_leave_unused_evidence_slots(self):
+        scores = [{'id': index, 'year': '2026', 'score': 1 - index * .01,
+                   'content': f'Metric {index}: FY24: 5; FY25: 6'} for index in range(8)]
+        selected = select_temporal_chunks(scores, None, 6, .7, ('FY24', 'FY25'))
+        self.assertEqual([item['id'] for item in selected], list(range(6)))
+
 
 class FakeEmbedder:
     def encode(self, query):
@@ -124,6 +131,8 @@ class TestActualTemporalSearch(unittest.TestCase):
             'retrieval_report_years': retrieval_report_years,
             'select_temporal_chunks': select_temporal_chunks,
             'requested_fiscal_years': requested_fiscal_years,
+            'numeric_evidence_allowed': numeric_evidence_allowed, 'INDEX_VERSION': INDEX_VERSION,
+            'prioritize_audited_evidence': prioritize_audited_evidence,
         })
 
     def tearDown(self):
@@ -176,6 +185,16 @@ class TestActualTemporalSearch(unittest.TestCase):
 
     def test_ui_filter_conflict_returns_no_evidence(self):
         self.assertEqual(self.search('2024 report water', year_filter='2026'), [])
+
+    def test_legacy_injections_and_continuations_never_win_retrieval(self):
+        with sqlite3.connect(self.path) as conn:
+            rows = [(10 + page, '2026',
+                     f'2026-Microsoft-Environmental-Sustainability-Report-PDF.pdf (p.{page})',
+                     'FY25 water withdrawal 99999', json.dumps([1, 0])) for page in (6, 25, 54)]
+            rows.append((99, '2026', 'Other legacy source', '[VERIFIED TABLE] FY25 water withdrawal 99999', json.dumps([1, 0])))
+            conn.executemany('INSERT INTO documents VALUES (?, ?, ?, ?, ?)', rows)
+        chunks = self.search('FY25 water withdrawal')
+        self.assertEqual([chunk['id'] for chunk in chunks], [3])
 
     def test_app_wires_temporal_policy_and_original_query(self):
         tree = ast.parse(Path(__file__).with_name('app.py').read_text())
