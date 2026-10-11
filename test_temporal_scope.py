@@ -199,8 +199,13 @@ class TestActualTemporalSearch(unittest.TestCase):
     def test_app_wires_temporal_policy_and_original_query(self):
         tree = ast.parse(Path(__file__).with_name('app.py').read_text())
         calls = [node for node in ast.walk(tree) if isinstance(node, ast.Call)]
-        for name in ('temporal_intent', 'temporal_clarification', 'temporal_evidence_instruction'):
+        for name in ('temporal_intent', 'temporal_clarification', 'build_rag_prompts'):
             self.assertTrue(any(isinstance(node.func, ast.Name) and node.func.id == name for node in calls))
+        prompt_tree = ast.parse(Path(__file__).with_name('answer_prompts.py').read_text())
+        self.assertTrue(any(isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+                            and node.func.id == 'temporal_evidence_instruction'
+                            and isinstance(node.args[0], ast.Name) and node.args[0].id == 'query'
+                            for node in ast.walk(prompt_tree)))
         translated = [node for node in calls if isinstance(node.func, ast.Name)
                       and node.func.id == 'search_context_hybrid' and node.args
                       and isinstance(node.args[0], ast.Name) and node.args[0].id == 'search_query']

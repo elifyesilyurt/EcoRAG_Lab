@@ -12,6 +12,7 @@ from typing import Optional, List, Dict, Any, Set, Tuple
 from sentence_transformers import SentenceTransformer
 
 from answer_prompts import build_rag_prompts
+from audited_math import calculate_with_model, render_audited_result
 
 from esg_tables import (
     get_carbon_emissions_df,
@@ -2971,16 +2972,12 @@ with tab_chat:
                             print("  -> Benzerlik Eşiği Altında: Kayıt Bulunamadı", flush=True)
                             stream_gen = stream_static_text(not_found_msg)
                         else:
-                            print("  [3/3] Yerel Model PoT Matematik Kodu Çıkarıyor...", flush=True)
-                            context_str = build_evidence_context(chunks)
-                            pot_prompt = (f"{temporal_evidence_instruction(query_to_run)}\n\n"
-                                          f"Context:\n{context_str}\n\nQuestion: {query_to_run}\n\nExecutable Python code:")
-                            code_raw = query_foundry(POT_EXTRACTION_SYSTEM_PROMPT, pot_prompt, temperature=0.0, preserve_format=True)
-                            math_res = DynamicMathExecutor.execute_code_lines(code_raw)
-
-                            calc_details, stream_gen = build_math_answer_response(
-                                math_res, query_to_run, target_lang, f_prompt
-                            )
+                            math_res, plan_attempts = calculate_with_model(query_to_run, chunks, query_foundry)
+                            calc_details = render_audited_result(math_res, target_lang)
+                            if math_res['success']:
+                                used_ids = {operand['evidence_id'] for operand in math_res['operands']}
+                                chunks = [chunk for chunk in chunks if chunk['id'] in used_ids]
+                            stream_gen = stream_static_text(calc_details)
                     else:
                         if not is_esg_query(query_to_run):
                             print("  [2/3] Alan Dışı Soru: Güvenli Reddetme Devrede", flush=True)

@@ -1,0 +1,15 @@
+# Audited-reference calculation path
+
+The production mathematical-query branch now requests a structured selection plan instead of Python code or model-supplied numeric values. The app and real-model evaluation runner share `calculate_with_model` and `execute_audited_plan`.
+
+Only retrieved chunks whose stored type is `audited_table` enter the numeric catalog. Each operand identifies an actual evidence ID and its FY/CY column. Values and input units are read from those source rows. Additional operand values/units, unknown IDs, duplicate operands, absent periods, partial fiscal-year comparisons, qualified disclosures, incompatible dimensions and zero denominators are rejected. A contracted commitment cannot substitute for a request mentioning realized/delivered/retired removal. Scope qualifications on source rows survive result rendering.
+
+Output units are selected by Python from the human question, or from operation/source units when no explicit output unit is recognized. A legacy model `output_unit` field is non-authoritative and ignored. Decimal arithmetic handles volume and energy scale conversions. Supported operations: source value/conversion, sum, ordered difference, ratio, percent-of, chronological percent change and percentage-point change. Time changes require the same metric, oldest period first. Unsupported/ambiguous choices produce no numeric answer.
+
+An invalid schema/selection gets at most one repair attempt with the actual validation reason and no expected answer. Unavailable source data is not retried. There is no fallback to unchecked model-generated arithmetic. Results and their source operands are rendered directly, so another model cannot rewrite the computed number.
+
+Regression coverage includes independently transcribed source values, m3 and kWh conversions, percentages versus percentage points, numeric injection, wrong IDs/periods, missing/qualified values, duplicate references, dimensional mismatches, zero denominators, contractual versus realized basis, scope notes and bounded repair. 143 offline checks pass; the 15 new calculation tests are distinct from actual model-answer checks.
+
+The actual fixture set now has 17 questions. Nine arithmetic cases cover FY23/FY24/FY25 water, Turkish/English wording, FY24/FY25 waste ratios, FY25 electricity in kWh, exact historical contracted-removal growth and unavailable exact FY25 growth. Results are saved in the task outputs directory.
+
+Limitations: this validates selected source references, periods, dimensional arithmetic and specified basis restrictions. It does not independently prove that the model selected the intended metric/operation or all geographic/organizational scopes for every natural-language question. Retrieval may omit required audited evidence. Unknown unit phrasing or unsupported compound formulas may be rejected. Narrative-only answers and the Streamlit UI are not certified by these component tests. Packaging audited rows and narrative numeric validation remain outstanding.

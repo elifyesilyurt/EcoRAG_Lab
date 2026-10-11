@@ -1,14 +1,179 @@
 [
- {"id":"water-difference-en","query":"Calculate FY25 water withdrawal minus consumption in cubic meters.","lang":"en","mode":"math","expected_result":5096000},
- {"id":"water-difference-tr","query":"FY25 su çekimi ile tüketimi arasındaki farkı metreküp olarak hesapla.","lang":"tr","mode":"math","expected_result":5096000},
- {"id":"waste-diversion-rate","query":"Calculate the FY25 operational waste diversion rate as a percentage of total waste generated.","lang":"en","mode":"math","expected_result":61.40687640144051,"tolerance":0.01},
- {"id":"removal-fy24","query":"What volume of total carbon removal was contracted in FY24? Distinguish commitments from realized removals.","lang":"en","mode":"narrative","required_numbers":[21927370],"required_groups":[["contract","commitment"],["future","not realized","not actual"]]},
- {"id":"removal-fy25-qualified","query":"What volume of total carbon removal was contracted in FY25?", "lang":"en","mode":"narrative","required_numbers":[45],"required_groups":[["more than","over","exceed"],["million"],["contract","commitment"]]},
- {"id":"removal-exact-growth-unavailable","query":"Calculate the exact percentage growth in contracted carbon removal from FY24 to FY25.","lang":"en","mode":"math_abstain"},
- {"id":"removal-technology-unavailable","query":"What is the exact FY25 direct air capture percentage share of the carbon removal portfolio?", "lang":"en","mode":"narrative","required_groups":[["not reported","not available","unavailable","cannot","not provided","not specified"]],"forbidden_numbers":[19.2,38.9]},
- {"id":"waste-fy25","query":"What is the FY25 total operational waste generated in metric tons?", "lang":"en","mode":"narrative","required_numbers":[58868],"forbidden_numbers":[265000]},
- {"id":"packaging-two-periods","query":"Compare single-use plastic packaging percentages for FY25 and calendar year ended December 31, 2025.","lang":"en","mode":"narrative","required_numbers":[4.2,0.07],"required_groups":[["FY25"],["calendar","December 31"]]},
- {"id":"missing-fy99","query":"What was total operational waste generated in FY99?", "lang":"en","mode":"no_evidence"},
- {"id":"packaging-missing-fy26","query":"What is the FY26 actual single-use plastic packaging percentage?", "lang":"en","mode":"no_evidence"},
- {"id":"out-of-domain","query":"Who founded Microsoft?", "lang":"en","mode":"out_of_domain"}
+  {
+    "id": "water-difference-en",
+    "query": "Calculate FY25 water withdrawal minus consumption in cubic meters.",
+    "lang": "en",
+    "mode": "math",
+    "expected_result": 5096000
+  },
+  {
+    "id": "water-difference-tr",
+    "query": "FY25 su çekimi ile tüketimi arasındaki farkı metreküp olarak hesapla.",
+    "lang": "tr",
+    "mode": "math",
+    "expected_result": 5096000
+  },
+  {
+    "id": "waste-diversion-rate",
+    "query": "Calculate the FY25 operational waste diversion rate as a percentage of total waste generated.",
+    "lang": "en",
+    "mode": "math",
+    "expected_result": 61.40687640144051,
+    "tolerance": 0.01
+  },
+  {
+    "id": "removal-fy24",
+    "query": "What volume of total carbon removal was contracted in FY24? Distinguish commitments from realized removals.",
+    "lang": "en",
+    "mode": "narrative",
+    "required_numbers": [
+      21927370
+    ],
+    "required_groups": [
+      [
+        "contract",
+        "commitment"
+      ],
+      [
+        "future",
+        "not realized",
+        "not actual"
+      ]
+    ]
+  },
+  {
+    "id": "removal-fy25-qualified",
+    "query": "What volume of total carbon removal was contracted in FY25?",
+    "lang": "en",
+    "mode": "narrative",
+    "required_numbers": [
+      45
+    ],
+    "required_groups": [
+      [
+        "more than",
+        "over",
+        "exceed"
+      ],
+      [
+        "million"
+      ],
+      [
+        "contract",
+        "commitment"
+      ]
+    ]
+  },
+  {
+    "id": "removal-exact-growth-unavailable",
+    "query": "Calculate the exact percentage growth in contracted carbon removal from FY24 to FY25.",
+    "lang": "en",
+    "mode": "math_abstain"
+  },
+  {
+    "id": "removal-technology-unavailable",
+    "query": "What is the exact FY25 direct air capture percentage share of the carbon removal portfolio?",
+    "lang": "en",
+    "mode": "narrative",
+    "required_groups": [
+      [
+        "not reported",
+        "not available",
+        "unavailable",
+        "cannot",
+        "not provided",
+        "not specified"
+      ]
+    ],
+    "forbidden_numbers": [
+      19.2,
+      38.9
+    ]
+  },
+  {
+    "id": "waste-fy25",
+    "query": "What is the FY25 total operational waste generated in metric tons?",
+    "lang": "en",
+    "mode": "narrative",
+    "required_numbers": [
+      58868
+    ],
+    "forbidden_numbers": [
+      265000
+    ]
+  },
+  {
+    "id": "packaging-two-periods",
+    "query": "Compare single-use plastic packaging percentages for FY25 and calendar year ended December 31, 2025.",
+    "lang": "en",
+    "mode": "narrative",
+    "required_numbers": [
+      4.2,
+      0.07
+    ],
+    "required_groups": [
+      [
+        "FY25"
+      ],
+      [
+        "calendar",
+        "December 31"
+      ]
+    ]
+  },
+  {
+    "id": "missing-fy99",
+    "query": "What was total operational waste generated in FY99?",
+    "lang": "en",
+    "mode": "no_evidence"
+  },
+  {
+    "id": "packaging-missing-fy26",
+    "query": "What is the FY26 actual single-use plastic packaging percentage?",
+    "lang": "en",
+    "mode": "no_evidence"
+  },
+  {
+    "id": "out-of-domain",
+    "query": "Who founded Microsoft?",
+    "lang": "en",
+    "mode": "out_of_domain"
+  },
+  {
+    "id": "water-difference-fy24",
+    "query": "Calculate FY24 water withdrawal minus consumption in cubic meters.",
+    "lang": "en",
+    "mode": "math",
+    "expected_result": 4897000
+  },
+  {
+    "id": "water-difference-fy23",
+    "query": "Calculate FY23 water withdrawal minus consumption in cubic meters.",
+    "lang": "en",
+    "mode": "math",
+    "expected_result": 3848000
+  },
+  {
+    "id": "energy-fy25-kwh",
+    "query": "Calculate FY25 total electricity consumption in kWh.",
+    "lang": "en",
+    "mode": "math",
+    "expected_result": 37026353000
+  },
+  {
+    "id": "waste-diversion-fy24",
+    "query": "Calculate the FY24 operational waste diversion rate as a percentage of total waste generated.",
+    "lang": "en",
+    "mode": "math",
+    "expected_result": 68.50326955679341,
+    "tolerance": 0.01
+  },
+  {
+    "id": "removal-growth-fy23-fy24",
+    "query": "Calculate percentage growth in total contracted carbon removal from FY23 to FY24.",
+    "lang": "en",
+    "mode": "math",
+    "expected_result": 337.23403640145733,
+    "tolerance": 0.01
+  }
 ]

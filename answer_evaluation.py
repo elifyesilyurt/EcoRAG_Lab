@@ -16,12 +16,12 @@ import sys
 from typing import Optional
 
 from answer_prompts import build_rag_prompts
-from dynamic_math_engine import DynamicMathExecutor, POT_EXTRACTION_SYSTEM_PROMPT
+from audited_math import calculate_with_model, render_audited_result
 from ingestion_core import (INDEX_VERSION, build_evidence_context, numeric_evidence_allowed,
                             prioritize_audited_evidence, select_evidence_chunks, source_hash)
 from query_routing import is_esg_query
 from temporal_scope import (requested_fiscal_years, retrieval_report_years,
-                            select_temporal_chunks, temporal_evidence_instruction)
+                            select_temporal_chunks)
 from test_baseline_regressions import load_app_functions
 
 ROOT = Path(__file__).resolve().parent
@@ -46,10 +46,7 @@ def score_case(case, record):
                     and math.isclose(result['result'], case['expected_result'],
                                      rel_tol=0, abs_tol=case.get('tolerance', .000001)))
     if mode == 'math_abstain':
-        # A crash/invalid syntax is not evidence of deliberate abstention.
-        raw = record.get('raw_code', '').lower()
-        return bool(not record.get('math', {}).get('success') and
-                    any(token in raw for token in ('unavailable', 'not reported', 'cannot', 'not exact', 'insufficient')))
+        return record.get('math', {}).get('status') == 'unavailable' and not record.get('math', {}).get('success')
     answer = record.get('answer', '')
     numbers = answer_numbers(answer)
     return (all(any(math.isclose(actual, value, rel_tol=0, abs_tol=.000001) for actual in numbers)
@@ -65,7 +62,7 @@ def main():
     parser.add_argument('--base-url', required=True, help='Running local Foundry endpoint')
     parser.add_argument('--model', default='phi-4-mini')
     parser.add_argument('--output', required=True)
-    parser.add_argument('--case', help='Run one fixture ID')
+    parser.add_argument('--case', action='append', help='Run selected fixture IDs; can be repeated')
     args = parser.parse_args()
     import requests
     report = {'status': 'running', 'model': args.model, 'endpoint': args.base_url,
@@ -99,7 +96,11 @@ def main():
     })
     fixtures = json.loads((ROOT / 'tests/fixtures/answer_evaluation.json').read_text())
     if args.case:
-        fixtures = [case for case in fixtures if case['id'] == args.case]
+        selected = set(args.case)
+        known = {case['id'] for case in fixtures}
+        if selected - known:
+            parser.error('Unknown fixture ID')
+        fixtures = [case for case in fixtures if case['id'] in selected]
         if not fixtures:
             parser.error('Unknown fixture ID')
     for case in fixtures:
@@ -114,11 +115,9 @@ def main():
                 if not chunks or score < .15:
                     record['status'] = 'no_evidence'
                 elif case['mode'] in ('math', 'math_abstain'):
-                    prompt = (temporal_evidence_instruction(case['query']) + '\n\nContext:\n'
-                              + build_evidence_context(chunks) + '\n\nQuestion: ' + case['query']
-                              + '\n\nExecutable Python code:')
-                    raw = app['query_foundry'](POT_EXTRACTION_SYSTEM_PROMPT, prompt, temperature=0, preserve_format=True)
-                    record.update(status='generated', raw_code=raw, math=DynamicMathExecutor.execute_code_lines(raw))
+                    calculated, attempts = calculate_with_model(case['query'], chunks, app['query_foundry'])
+                    record.update(status='generated', plan_attempts=attempts, math=calculated,
+                                  answer=render_audited_result(calculated, case['lang']))
                 else:
                     system, prompt = build_rag_prompts(build_evidence_context(chunks), case['query'], case['lang'])
                     record.update(status='generated', answer=app['query_foundry'](system, prompt, temperature=.1, max_tokens=1024))

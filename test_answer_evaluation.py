@@ -20,7 +20,7 @@ class TestAnswerEvaluation(unittest.TestCase):
         case = {'mode': 'math_abstain'}
         self.assertFalse(score_case(case, {'error': 'Timeout', 'raw_code': 'cannot calculate'}))
         self.assertFalse(score_case(case, {'math': {'success': False}, 'raw_code': 'result = broken()'}))
-        self.assertTrue(score_case(case, {'math': {'success': False}, 'raw_code': 'Cannot calculate: exact data unavailable.'}))
+        self.assertTrue(score_case(case, {'math': {'success': False, 'status': 'unavailable'}}))
 
     def test_correct_number_alone_does_not_prove_qualified_answer(self):
         case = {'mode': 'narrative', 'required_numbers': [45], 'required_groups': [['more than'], ['contracted']]}
