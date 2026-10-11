@@ -3112,7 +3112,7 @@ with tab_dashboard:
             )
             st.caption(T["kpi_waste_cap"])
 
-    st.space("medium")
+    st.write("")
 
     # Tablo 1: Karbon Emisyonları (Scope 1, 2, 3)
     with st.container(border=True):

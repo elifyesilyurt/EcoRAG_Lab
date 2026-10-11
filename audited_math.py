@@ -205,7 +205,7 @@ def metric_tokens(text):
                'sozles': 'contracted', 'giderim': 'removal', 'uzaklast': 'removal',
                'karbon': 'carbon', 'atik': 'waste', 'diver': 'diverted', 'yonlend': 'diverted',
                'generat': 'generated', 'uretil': 'generated', 'elektrik': 'electricity',
-               'operasyon': 'operational', 'plastic': 'plastics', 'packag': 'packaging'}
+               'operasyon': 'operational', 'plastic': 'plastics', 'packag': 'packaging', 'watershed': 'watershed', 'replenish': 'replenishment'}
     tokens = []
     for word in re.findall(r'\w+', text):
         mapped = next((target for stem, target in aliases.items()

@@ -51,7 +51,7 @@ def requested_report_years(query):
 
 
 def has_temporal_request(query):
-    return bool(re.search(r'\bfy\s*(?:20\d{2}|\d{2})\b|\b20\d{2}\b', (query or '').lower()))
+    return bool(requested_calendar_years(query) or re.search(r'\bfy\s*(?:20\d{2}|\d{2})\b|\b20\d{2}\b', (query or '').lower()))
 
 
 def temporal_clarification(query, lang='tr'):

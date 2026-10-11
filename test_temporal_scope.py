@@ -36,6 +36,11 @@ class TestTemporalContracts(unittest.TestCase):
         self.assertEqual(select_evidence_chunks([fiscal], scope_query='CY2025 packaging'), [])
         self.assertEqual(select_evidence_chunks([calendar], scope_query='calendar year 2025 packaging'), [calendar])
 
+    def test_calendar_dates_force_period_specific_topic_routing(self):
+        for intent in STATIC_INTENTS:
+            for query in ('CY2025 packaging', 'calendar year ended December 31, 2025 packaging'):
+                self.assertEqual(temporal_intent(query, intent), 'general_rag')
+
     def test_fiscal_spellings_ranges_and_targets(self):
         for query in ('FY24', 'FY 24', 'fy2024', 'FY 2024'):
             self.assertEqual(requested_fiscal_years(query), ('FY24',))

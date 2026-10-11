@@ -210,5 +210,34 @@
     "lang": "en",
     "mode": "math",
     "expected_result": -1.2
+  },
+  {
+    "id": "qualitative-water-source",
+    "query": "Explain water stewardship and watershed strategy.",
+    "lang": "en",
+    "mode": "narrative",
+    "required_groups": [
+      [
+        "water"
+      ],
+      [
+        "Source excerpts",
+        "source excerpts"
+      ]
+    ]
+  },
+  {
+    "id": "qualitative-electricity-source",
+    "query": "Explain renewable electricity procurement policy.",
+    "lang": "en",
+    "mode": "narrative",
+    "required_groups": [
+      [
+        "electricity"
+      ],
+      [
+        "source excerpts"
+      ]
+    ]
   }
 ]
