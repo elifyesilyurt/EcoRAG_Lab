@@ -15,9 +15,9 @@ import sqlite3
 import sys
 from typing import Optional
 
-from answer_prompts import build_rag_prompts
+from grounded_narrative import generate_grounded_narrative
 from audited_math import calculate_with_model, render_audited_result
-from ingestion_core import (INDEX_VERSION, build_evidence_context, numeric_evidence_allowed,
+from ingestion_core import (INDEX_VERSION, numeric_evidence_allowed,
                             prioritize_audited_evidence, select_evidence_chunks, source_hash)
 from query_routing import is_esg_query
 from temporal_scope import (requested_fiscal_years, retrieval_report_years,
@@ -119,8 +119,8 @@ def main():
                     record.update(status='generated', plan_attempts=attempts, math=calculated,
                                   answer=render_audited_result(calculated, case['lang']))
                 else:
-                    system, prompt = build_rag_prompts(build_evidence_context(chunks), case['query'], case['lang'])
-                    record.update(status='generated', answer=app['query_foundry'](system, prompt, temperature=.1, max_tokens=1024))
+                    narrative = generate_grounded_narrative(case["query"], chunks, case["lang"], app["query_foundry"])
+                    record.update(status="generated", answer=narrative["answer"], narrative_validation=narrative)
         except Exception as exc:
             record.update(status='error', error=f'{type(exc).__name__}: {exc}')
         record['passed'] = score_case(case, record)

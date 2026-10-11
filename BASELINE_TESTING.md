@@ -7,7 +7,7 @@ Baseline source: `2413b4d5011c74ddfb2e773b6f643fc4cd3dd140`
 
 ```bash
 python -m pip install -r requirements-test.txt
-python -m unittest test_dynamic_math test_baseline_regressions test_resource_metrics test_math_response test_query_routing test_temporal_scope test_ingestion_reliability test_answer_evaluation test_audited_math -v
+python -m unittest test_dynamic_math test_baseline_regressions test_resource_metrics test_math_response test_query_routing test_temporal_scope test_ingestion_reliability test_answer_evaluation test_audited_math test_grounded_narrative -v
 ```
 
 PowerShell uses the same install and test commands.
@@ -21,7 +21,7 @@ replaced with direct imports when the query engine is separated from the UI.
 
 ## Current status after stage 8
 
-151 tests: **151 pass, no expected failures**. FY24 display, partial math execution,
+164 tests: **164 pass, no expected failures**. FY24 display, partial math execution,
 and water calculator routing regressions are fixed. See
 `MATH_EXECUTION_RELIABILITY.md` and `QUERY_ROUTING_RELIABILITY.md` for execution
 and routing contracts. Xbox environmental questions now pass the domain gate;

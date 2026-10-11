@@ -22,7 +22,7 @@ from test_baseline_regressions import load_app_functions
 
 class TestTemporalContracts(unittest.TestCase):
     def test_explicit_calendar_period_is_not_ambiguous_or_fiscal(self):
-        for query in ('CY2025 packaging', 'calendar year 2025 packaging', 'takvim yılı 2025 ambalaj'):
+        for query in ('CY2025 packaging', 'calendar year 2025 packaging', 'takvim yılı 2025 ambalaj', 'calendar year ended December 31, 2025 packaging'):
             self.assertEqual(requested_calendar_years(query), ('CY2025',))
             self.assertEqual(requested_fiscal_years(query), ())
             self.assertIsNone(temporal_clarification(query))
@@ -214,7 +214,7 @@ class TestActualTemporalSearch(unittest.TestCase):
     def test_app_wires_temporal_policy_and_original_query(self):
         tree = ast.parse(Path(__file__).with_name('app.py').read_text())
         calls = [node for node in ast.walk(tree) if isinstance(node, ast.Call)]
-        for name in ('temporal_intent', 'temporal_clarification', 'build_rag_prompts'):
+        for name in ('temporal_intent', 'temporal_clarification', 'generate_grounded_narrative'):
             self.assertTrue(any(isinstance(node.func, ast.Name) and node.func.id == name for node in calls))
         prompt_tree = ast.parse(Path(__file__).with_name('answer_prompts.py').read_text())
         self.assertTrue(any(isinstance(node, ast.Call) and isinstance(node.func, ast.Name)

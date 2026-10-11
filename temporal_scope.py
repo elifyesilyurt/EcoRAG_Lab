@@ -26,6 +26,7 @@ def requested_calendar_years(query):
     """Explicit calendar periods only; bare years remain ambiguous."""
     q = (query or '').lower()
     years = re.findall(r'\b(?:cy\s*|calendar[ -]year\s*|takvim yılı\s*)(20\d{2})\b', q)
+    years += re.findall(r'\bcalendar[ -]year\s+ended\s+[^.!?\n]{0,50}?\b(20\d{2})\b', q)
     return tuple(f'CY{year}' for year in sorted(set(years)))
 
 
@@ -56,6 +57,7 @@ def has_temporal_request(query):
 def temporal_clarification(query, lang='tr'):
     q = re.sub(r'\bfy\s*(?:20\d{2}|\d{2})\b', '', (query or '').lower())
     q = re.sub(r"\b(?:cy\s*|calendar[ -]year\s*|takvim yılı\s*)20\d{2}\b", "", q)
+    q = re.sub(r"\bcalendar[ -]year\s+ended\s+[^.!?\n]{0,50}?\b20\d{2}\b", "", q)
     calendar = set(re.findall(r'\b20\d{2}\b', q)) - {'2030', '2050'}
     if calendar and not requested_report_years(query):
         if lang == 'tr':

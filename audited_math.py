@@ -78,7 +78,7 @@ def unsupported_scope(query, metric):
                'groundwater', 'surface water', 'third-party water', 'water stress']
     if 'packaging' in label:
         limited += ['secondary packaging', 'transport packaging', 'shipping packaging',
-                    'ikincil ambalaj', 'nakliye ambalaj']
+                    'ikincil ambalaj', 'nakliye ambalaj', 'all packaging', 'all product packaging']
     if 'contracted' in label:
         limited += ['direct air capture', 'dac', 'beccs', 'biochar', 'forest', 'nature-based']
     if any(scope in q and scope not in label for scope in limited):
@@ -205,7 +205,7 @@ def metric_tokens(text):
                'sozles': 'contracted', 'giderim': 'removal', 'uzaklast': 'removal',
                'karbon': 'carbon', 'atik': 'waste', 'diver': 'diverted', 'yonlend': 'diverted',
                'generat': 'generated', 'uretil': 'generated', 'elektrik': 'electricity',
-               'operasyon': 'operational'}
+               'operasyon': 'operational', 'plastic': 'plastics', 'packag': 'packaging'}
     tokens = []
     for word in re.findall(r'\w+', text):
         mapped = next((target for stem, target in aliases.items()

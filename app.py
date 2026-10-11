@@ -11,7 +11,7 @@ import streamlit as st
 from typing import Optional, List, Dict, Any, Set, Tuple
 from sentence_transformers import SentenceTransformer
 
-from answer_prompts import build_rag_prompts
+from grounded_narrative import generate_grounded_narrative
 from audited_math import calculate_with_model, render_audited_result
 
 from esg_tables import (
@@ -35,7 +35,7 @@ from extraction_pipeline import (
     DeterministicResolver
 )
 from query_routing import is_esg_query, classify_esg_intent
-from ingestion_core import numeric_evidence_allowed, build_evidence_context, select_evidence_chunks, prioritize_audited_evidence, INDEX_VERSION
+from ingestion_core import numeric_evidence_allowed, select_evidence_chunks, prioritize_audited_evidence, INDEX_VERSION
 from temporal_scope import (
     temporal_intent, retrieval_report_years, select_temporal_chunks,
     temporal_evidence_instruction, requested_fiscal_years, temporal_clarification,
@@ -3007,13 +3007,12 @@ with tab_chat:
                                 print("  -> Benzerlik Eşiği Altında: Kayıt Bulunamadı", flush=True)
                                 stream_gen = stream_static_text(not_found_msg)
                             else:
-                                print("  [3/3] Yerel Phi-4-mini Tek Geçişli Akış Sentezi Başlatılıyor...", flush=True)
+                                print("  [3/3] Kaynak Bağlama ve Anlatı Sayı Kontrolü Başlatılıyor...", flush=True)
                                 # Whole evidence chunks preserve row/year/unit and provenance.
-                                context_str = build_evidence_context(chunks)
                                 show_live_status(status_placeholder, "✍️ Yanıt oluşturuluyor..." if target_lang == "tr" else "✍️ Generating response...")
 
-                                rag_system, user_prompt = build_rag_prompts(context_str, query_to_run, target_lang)
-                                stream_gen = query_foundry_stream(rag_system, user_prompt, temperature=0.1)
+                                narrative = generate_grounded_narrative(query_to_run, chunks, target_lang, query_foundry)
+                                stream_gen = stream_static_text(narrative["answer"])
 
                     # Akışı başlat — status mesajı ilk token gelene kadar görünür kalır
                     def _stream_with_live_status(gen, placeholder):
