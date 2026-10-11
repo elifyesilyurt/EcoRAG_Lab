@@ -28,6 +28,10 @@ from extraction_pipeline import (
     DeterministicResolver
 )
 from query_routing import is_esg_query, classify_esg_intent
+from temporal_scope import (
+    temporal_intent, retrieval_report_years, select_temporal_chunks,
+    temporal_evidence_instruction, requested_fiscal_years, temporal_clarification,
+)
 from dynamic_math_engine import (
     DynamicMathExecutor,
     POT_EXTRACTION_SYSTEM_PROMPT,
@@ -749,9 +753,12 @@ def compute_water_dashboard_metrics(lang: str = "tr") -> dict:
     unit = "milyon m³" if lang == "tr" else "million m³"
     return {"value": f"{volume:.2f} {unit}", "delta": f"{delta:+.2f} {unit} (FY24 → FY25)"}
 
-def search_context_hybrid(query: str, year_filter: Optional[str] = None):
+def search_context_hybrid(query: str, year_filter: Optional[str] = None, scope_query: Optional[str] = None):
     import unicodedata
-    import collections
+    scope_query = query if scope_query is None else scope_query
+    report_years = retrieval_report_years(scope_query, year_filter)
+    if report_years == ():
+        return [], 0.0
 
     # SQLite üzerinde year metadata indeksi oluştur (hızlı filtreleme & katmanlama için)
     try:
@@ -766,8 +773,12 @@ def search_context_hybrid(query: str, year_filter: Optional[str] = None):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
-    if year_filter and str(year_filter).strip() in ("2024", "2025", "2026"):
-        cursor.execute("SELECT id, year, title, content, embedding FROM documents WHERE year = ?", (str(year_filter).strip(),))
+    if report_years:
+        placeholders = ",".join("?" for _ in report_years)
+        cursor.execute(
+            f"SELECT id, year, title, content, embedding FROM documents WHERE year IN ({placeholders})",
+            report_years,
+        )
     else:
         cursor.execute("SELECT id, year, title, content, embedding FROM documents")
 
@@ -824,57 +835,19 @@ def search_context_hybrid(query: str, year_filter: Optional[str] = None):
     if max_score < MIN_SCORE_FLOOR:
         return [], max_score
 
-    # 🌟 Saf Metadata Tabanlı Year-Stratified Katmanlama
-    by_year = collections.defaultdict(list)
-    for s in scores:
-        y_val = str(s.get("year", "")).strip()
-        by_year[y_val].append(s)
-
-    found_years = re.findall(r'\b(2024|2025|2026)\b', query)
-    found_fys = re.findall(r'\bfy\s*(2[0-6])\b', query.lower())
-    fy_to_report = {'23': '2024', '24': '2025', '25': '2026'}
-    mapped_fy_years = [fy_to_report[fy] for fy in found_fys if fy in fy_to_report]
-    target_metadata_years = set(found_years + mapped_fy_years)
-    q_norm = normalize_str(query)
-
-    is_multi_year = bool(
-        len(found_years) >= 2 or
-        len(found_fys) >= 2 or
-        (len(found_years) >= 1 and len(found_fys) >= 1) or
-        any(w in q_norm for w in ["uc yillik", "3 yillik", "tarihsel", "karsilastir", "gelisim", "trajectory", "multi-year", "across the", "across reports", "trend", "fark", "degisim", "ilerle"])
+    fiscal_years = requested_fiscal_years(scope_query)
+    sampling_years = report_years
+    # Preserve broad multi-report coverage for undated narrative comparisons.
+    if not sampling_years and not fiscal_years and any(
+        word in normalize_str(scope_query) for word in (
+            "compare", "karsilastir", "trajectory", "multi-year", "across reports", "trend", "tarihsel"
+        )
+    ):
+        sampling_years = tuple(sorted({item["year"] for item in scores}))
+    filtered = select_temporal_chunks(
+        scores, sampling_years, MAX_K, RELATIVE_DROP_RATIO,
+        fiscal_years, MIN_SCORE_FLOOR,
     )
-
-    if is_multi_year and not year_filter:
-        y2024 = by_year.get("2024", [])[:2]
-        y2025 = by_year.get("2025", [])[:2]
-        y2026 = by_year.get("2026", [])[:2]
-        
-        # Eğer sorgu spesifik olarak FY23 ve FY25 istiyorsa (2024 ve 2026 raporları)
-        if ('23' in found_fys or '2024' in found_years) and ('25' in found_fys or '2026' in found_years) and '24' not in found_fys and '2025' not in found_years:
-            y2024_top3 = by_year.get("2024", [])[:3]
-            y2026_top3 = by_year.get("2026", [])[:3]
-            stratified = y2026_top3 + y2024_top3
-        else:
-            stratified = y2026 + y2025 + y2024
-
-        if len(stratified) >= 3:
-            filtered = stratified
-        else:
-            cutoff = max_score * RELATIVE_DROP_RATIO
-            filtered = [item for item in scores[:MAX_K] if item["score"] >= cutoff]
-    elif len(target_metadata_years) == 1 and not year_filter and not is_multi_year:
-        # Tek bir yıla odaklanan sorgu için metadata hedeflemesi (Cross-year temporal sızıntı önleme)
-        single_target = list(target_metadata_years)[0]
-        cutoff = max_score * RELATIVE_DROP_RATIO
-        targeted_chunks = [item for item in by_year.get(single_target, []) if item["score"] >= cutoff][:MAX_K]
-        if len(targeted_chunks) >= 2:
-            filtered = targeted_chunks
-        else:
-            filtered = [item for item in scores[:MAX_K] if item["score"] >= cutoff]
-    else:
-        cutoff = max_score * RELATIVE_DROP_RATIO
-        filtered = [item for item in scores[:MAX_K] if item["score"] >= cutoff]
-    
     del scores
     del rows
     gc.collect()
@@ -2935,10 +2908,15 @@ with tab_chat:
                     not_found_msg = TEXTS[target_lang]["not_found_msg"]
                     active_year_filter = st.session_state.get("selected_year_filter", None)
 
-                    intent = classify_esg_intent(query_to_run)
+                    intent = temporal_intent(
+                        query_to_run, classify_esg_intent(query_to_run), active_year_filter
+                    )
                     print(f"  [2/3] Ontolojik ESG Niyet Sınıfı: {intent.upper()}", flush=True)
 
-                    if intent == "out_of_domain":
+                    clarification = temporal_clarification(query_to_run, target_lang)
+                    if intent != "out_of_domain" and clarification:
+                        stream_gen = stream_static_text(clarification)
+                    elif intent == "out_of_domain":
                         print("  -> Alan Dışı Soru: Güvenli Reddetme Devrede", flush=True)
                         stream_gen = stream_static_text(not_found_msg)
                     elif intent == "carbon_commitments":
@@ -3023,7 +3001,8 @@ with tab_chat:
                             print("  [3/3] Yerel Model PoT Matematik Kodu Çıkarıyor...", flush=True)
                             context_chunks = [c["content"] for c in chunks]
                             context_str = "\n\n".join(context_chunks)
-                            pot_prompt = f"Context:\n{context_str}\n\nQuestion: {query_to_run}\n\nExecutable Python code:"
+                            pot_prompt = (f"{temporal_evidence_instruction(query_to_run)}\n\n"
+                                          f"Context:\n{context_str}\n\nQuestion: {query_to_run}\n\nExecutable Python code:")
                             code_raw = query_foundry(POT_EXTRACTION_SYSTEM_PROMPT, pot_prompt, temperature=0.0)
                             math_res = DynamicMathExecutor.execute_code_lines(code_raw)
 
@@ -3044,11 +3023,11 @@ with tab_chat:
                                     search_query = en_search_query
 
                             print(f"  [2/3] Hibrit Vektör Arama Çalıştırılıyor (Filtre: {active_year_filter or 'Otomatik'})...", flush=True)
-                            chunks, max_score = search_context_hybrid(search_query, year_filter=active_year_filter)
+                            chunks, max_score = search_context_hybrid(search_query, year_filter=active_year_filter, scope_query=query_to_run)
                             if (not chunks or max_score < MIN_SCORE_FLOOR) and search_query != query_to_run:
                                 # İngilizce eşleme skoru düşükse orijinal sorguyu da dene
                                 alt_chunks, alt_score = search_context_hybrid(query_to_run, year_filter=active_year_filter)
-                                if alt_score > max_score:
+                                if alt_chunks and (not chunks or alt_score > max_score):
                                     chunks, max_score = alt_chunks, alt_score
 
                             print(f"  -> Arama Tamamlandı ({len(chunks)} chunk, En Yüksek Skor: {max_score:.4f})", flush=True)
@@ -3077,6 +3056,7 @@ with tab_chat:
                                     )
                                     user_prompt = f"Context:\n{context_str}\n\nQuestion: {query_to_run}"
 
+                                rag_system += " " + temporal_evidence_instruction(query_to_run)
                                 stream_gen = query_foundry_stream(rag_system, user_prompt, temperature=0.1)
 
                     # Akışı başlat — status mesajı ilk token gelene kadar görünür kalır

@@ -7,7 +7,7 @@ Baseline source: `2413b4d5011c74ddfb2e773b6f643fc4cd3dd140`
 
 ```bash
 python -m pip install -r requirements-test.txt
-python -m unittest test_dynamic_math test_baseline_regressions test_resource_metrics test_math_response test_query_routing -v
+python -m unittest test_dynamic_math test_baseline_regressions test_resource_metrics test_math_response test_query_routing test_temporal_scope -v
 ```
 
 PowerShell uses the same install and test commands.
@@ -19,16 +19,18 @@ dependencies. They do not copy the router rules
 into a separate implementation. This temporary extraction approach will be
 replaced with direct imports when the query engine is separated from the UI.
 
-## Current status after stage 6
+## Current status after stage 7
 
-54 tests: **54 pass, no expected failures**. FY24 display, partial math execution,
+73 tests: **73 pass, no expected failures**. FY24 display, partial math execution,
 and water calculator routing regressions are fixed. See
 `MATH_EXECUTION_RELIABILITY.md` and `QUERY_ROUTING_RELIABILITY.md` for execution
 and routing contracts. Xbox environmental questions now pass the domain gate;
 generic gaming and explicit exclusions remain rejected.
 See `CARBON_DATA_VERIFICATION.md` for the carbon audit and
 `RESOURCE_DATA_VERIFICATION.md` for water/energy source checks and units.
-Waste, requested-year answer handling, retrieval and real model integration remain unverified.
+Requested-year routing and temporal retrieval constraints are now tested; see
+`TEMPORAL_RELIABILITY.md`. Waste source data, retrieval relevance, corpus rebuild
+and real model integration still require validation.
 
 ## Recorded initial baseline
 

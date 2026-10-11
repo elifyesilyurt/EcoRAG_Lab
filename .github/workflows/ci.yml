@@ -24,8 +24,8 @@ jobs:
 
       - name: Code style and lint check (Ruff)
         run: |
-          ruff check --line-length=120 --ignore E501,BLE001,TRY004,UP,B017,I001 dynamic_math_engine.py test_dynamic_math.py test_baseline_regressions.py test_resource_metrics.py test_math_response.py query_routing.py test_query_routing.py
+          ruff check --line-length=120 --ignore E501,BLE001,TRY004,UP,B017,I001 dynamic_math_engine.py test_dynamic_math.py test_baseline_regressions.py test_resource_metrics.py test_math_response.py query_routing.py test_query_routing.py temporal_scope.py test_temporal_scope.py
 
       - name: Run offline baseline and regression tests
         run: |
-          python -m unittest test_dynamic_math test_baseline_regressions test_resource_metrics test_math_response test_query_routing -v
+          python -m unittest test_dynamic_math test_baseline_regressions test_resource_metrics test_math_response test_query_routing test_temporal_scope -v
