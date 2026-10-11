@@ -235,15 +235,35 @@ Respond ONLY with the Python code block."""
 
 
 def is_mathematical_query(query: str) -> bool:
-    """Sorgunun matematiksel hesaplama, karşılaştırma veya toplama gerektirip gerektirmediğini tespit eder."""
+    """Recognize numeric operations without treating every comparison as math.
+
+    Explicit calculation/counting verbs and ratio/percentage-point requests are
+    strong signals. Broad words such as compare, total and difference require
+    numeric context. Policies/strategies alone remain narrative comparisons.
+    """
+    if not isinstance(query, str) or not query.strip():
+        return False
     q = query.lower()
-    math_signals = [
-        r"\btoplam\b", r"\btoplamı\b", r"\btoplam kaç\b", r"\bfark\b", r"\bfarkı\b", r"\bkaç puan\b", r"\byüzde puan\b",
-        r"\bartış\b", r"\bazalış\b", r"\boran\b", r"\boranı\b", r"\byüzdesi\b", r"\byüzde kaç\b", r"\bkatı\b", r"\bdeğişim\b",
-        r"\bhesapla\b", r"\bkarşılaştır\b", r"\bsum\b", r"\btotal\b", r"\bdifference\b", r"\bdelta\b", r"\bratio\b",
-        r"\bpercentage point\b", r"\bpercentage points\b", r"\bincrease\b", r"\bdecrease\b", r"\bcompare\b",
-        r"\bhigher\b", r"\blower\b", r"\bhow much more\b", r"\bhow much less\b"
-    ]
-    return any(bool(re.search(pat, q)) for pat in math_signals)
-
-
+    explicit_operation = bool(re.search(
+        r"\b(?:calculate|compute|sum|add|subtract|divide|multiply|hesapla\w*|topla\w*)\b", q
+    ))
+    if explicit_operation:
+        return True
+    definition = bool(re.search(r"\b(?:mean|means|definition|define|tanım\w*|anlam\w*)\b", q))
+    if definition:
+        return False
+    if re.search(r"\b(?:ratio|oran[ıiuü]?|percentage points?|yüzde puan|kaç puan|yüzde kaç|kaç kat\w*|how many|kaç adet)\b", q):
+        return True
+    quantitative_context = bool(re.search(
+        r"\d|%|\b(?:mwh|kwh|mtco2e|gw|how much|ne kadar|kaç|sayısal|numeric)\b|m[³3]", q
+    ))
+    if not quantitative_context:
+        return False
+    # A dated comparison of policies still does not ask for numeric arithmetic.
+    qualitative_topic = bool(re.search(r"\b(?:polic\w*|strateg\w*|politika\w*|strateji\w*|vizyon)\b", q))
+    if qualitative_topic and not re.search(r"%|\b(?:mwh|kwh|mtco2e|how much|ne kadar|kaç)\b|m[³3]", q):
+        return False
+    return bool(re.search(
+        r"\b(?:toplam\w*|fark\w*|artış\w*|arttı\w*|azalış\w*|azaldı\w*|düşüş\w*|yüzdesi|katı|değiş\w*|hesapla\w*|"
+        r"karşılaştır\w*|difference|delta|total|increase|decrease|growth|change|compare|higher|lower)\b", q
+    ))

@@ -1,0 +1,142 @@
+[
+  {
+    "id": "water_difference_tr",
+    "question": "FY25 su çekimi ile tüketimi arasındaki fark kaç metreküptür?",
+    "intent": "mathematical_query"
+  },
+  {
+    "id": "water_ratio_en",
+    "question": "Calculate the FY25 water replenishment to withdrawal ratio",
+    "intent": "mathematical_query"
+  },
+  {
+    "id": "water_goal_calculation_tr",
+    "question": "2030 su hedefi için FY25 çekimi ve yenileme hacmi farkını hesapla",
+    "intent": "mathematical_query"
+  },
+  {
+    "id": "energy_difference_en",
+    "question": "What is the difference between FY24 and FY25 electricity consumption in MWh?",
+    "intent": "mathematical_query"
+  },
+  {
+    "id": "energy_ppa_ratio_tr",
+    "question": "FY25 PPA elektrik eşleştirme oranını hesapla",
+    "intent": "mathematical_query"
+  },
+  {
+    "id": "carbon_scope_compare_en",
+    "question": "Compare Scope 1 and Scope 3 emissions between FY20 and FY25",
+    "intent": "mathematical_query"
+  },
+  {
+    "id": "carbon_removal_growth_tr",
+    "question": "Karbon uzaklaştırma portföyü FY24 ile FY25 arasında yüzde kaç arttı?",
+    "intent": "mathematical_query"
+  },
+  {
+    "id": "carbon_category_sum_en",
+    "question": "Sum Scope 3 Category 1 and Category 2 emissions in FY25",
+    "intent": "mathematical_query"
+  },
+  {
+    "id": "waste_change_tr",
+    "question": "FY24 ve FY25 sıfır atık yönlendirme oranları arasındaki yüzde puan farkını hesapla",
+    "intent": "mathematical_query"
+  },
+  {
+    "id": "packaging_points_en",
+    "question": "Calculate the percentage point reduction in single-use plastic packaging between FY24 and FY25",
+    "intent": "mathematical_query"
+  },
+  {
+    "id": "packaging_numeric_compare_tr",
+    "question": "2025 ve 2026 raporlarındaki ambalaj plastik oranlarını karşılaştır",
+    "intent": "mathematical_query"
+  },
+  {
+    "id": "water_fido_narrative_en",
+    "question": "How does FIDO Tech acoustic leak detection work?",
+    "intent": "water_stewardship"
+  },
+  {
+    "id": "water_narrative_compare_en",
+    "question": "Compare water stewardship policies and water replenishment strategies",
+    "intent": "general_rag"
+  },
+  {
+    "id": "water_definitions_en",
+    "question": "Explain the difference between water withdrawal and consumption",
+    "intent": "water_stewardship"
+  },
+  {
+    "id": "energy_narrative_compare_en",
+    "question": "Compare clean energy PPA procurement strategies",
+    "intent": "general_rag"
+  },
+  {
+    "id": "carbon_narrative_compare_tr",
+    "question": "Karbon negatif olma stratejilerini karşılaştır ve açıkla",
+    "intent": "general_rag"
+  },
+  {
+    "id": "carbon_removal_narrative_en",
+    "question": "Describe the carbon removal portfolio",
+    "intent": "carbon_removal"
+  },
+  {
+    "id": "carbon_trend_narrative_en",
+    "question": "Describe the overall GHG emissions trend",
+    "intent": "carbon_trend_scope"
+  },
+  {
+    "id": "packaging_narrative_en",
+    "question": "Explain the 2026 single-use plastic packaging reduction strategy",
+    "intent": "packaging_plastic"
+  },
+  {
+    "id": "waste_narrative_en",
+    "question": "Describe zero waste certification standards",
+    "intent": "zero_waste_circularity"
+  },
+  {
+    "id": "financial_calculation_reject_en",
+    "question": "Calculate the difference in Microsoft stock price between 2024 and 2025",
+    "intent": "out_of_domain"
+  },
+  {
+    "id": "plain_arithmetic_reject_en",
+    "question": "Calculate 10 minus 4",
+    "intent": "out_of_domain"
+  },
+  {
+    "id": "water_target_en",
+    "question": "What is Microsoft's 2030 water positive target?",
+    "intent": "water_stewardship"
+  },
+  {
+    "id": "general_narrative_en",
+    "question": "Describe biodiversity projects in Amsterdam",
+    "intent": "general_rag"
+  },
+  {
+    "id": "dated_policy_compare_en",
+    "question": "Compare water stewardship policies in 2024 and 2025",
+    "intent": "general_rag"
+  },
+  {
+    "id": "waste_goal_en",
+    "question": "What is Microsoft's 2030 zero waste goal?",
+    "intent": "zero_waste_circularity"
+  },
+  {
+    "id": "calculator_false_domain_sum",
+    "question": "Sum 10 and 4",
+    "intent": "out_of_domain"
+  },
+  {
+    "id": "numeric_multiple_tr",
+    "question": "FY25 elektrik tüketimi FY24 tüketiminin kaç katıdır?",
+    "intent": "mathematical_query"
+  }
+]

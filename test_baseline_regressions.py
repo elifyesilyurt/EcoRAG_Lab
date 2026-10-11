@@ -15,7 +15,8 @@ from unittest.mock import patch
 
 import pandas as pd
 
-from dynamic_math_engine import DynamicMathExecutor, is_mathematical_query
+from dynamic_math_engine import DynamicMathExecutor
+from query_routing import is_esg_query, classify_esg_intent
 from esg_tables import get_carbon_emissions_df
 
 
@@ -43,11 +44,10 @@ def load_app_functions(names, dependencies):
 
 # Resolve this outside expected-failure tests so loader/import errors fail the suite.
 APP = load_app_functions(
-    {"detect_query_language", "is_esg_query", "classify_esg_intent",
-     "compute_carbon_trend_summary"},
-    {"re": re, "is_mathematical_query": is_mathematical_query,
-     "get_carbon_emissions_df": get_carbon_emissions_df},
+    {"detect_query_language", "compute_carbon_trend_summary"},
+    {"re": re, "get_carbon_emissions_df": get_carbon_emissions_df},
 )
+APP.update(is_esg_query=is_esg_query, classify_esg_intent=classify_esg_intent)
 QUERIES = json.loads(ROOT.joinpath("tests/fixtures/baseline_queries.json").read_text())
 
 
@@ -133,7 +133,6 @@ class TestKnownRegressions(unittest.TestCase):
         result = DynamicMathExecutor.execute_code_lines("a = 10\nresult = a / 0")
         self.assertFalse(result["success"], "A successful input assignment is not a successful calculation")
 
-    @known_defect
     def test_water_difference_reaches_calculator(self):
         query = "FY25 su çekimi ile tüketimi arasındaki fark kaç metreküptür?"
         self.assertEqual(APP["classify_esg_intent"](query), "mathematical_query")

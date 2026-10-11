@@ -7,25 +7,27 @@ Baseline source: `2413b4d5011c74ddfb2e773b6f643fc4cd3dd140`
 
 ```bash
 python -m pip install -r requirements-test.txt
-python -m unittest test_dynamic_math test_baseline_regressions test_resource_metrics test_math_response -v
+python -m unittest test_dynamic_math test_baseline_regressions test_resource_metrics test_math_response test_query_routing -v
 ```
 
 PowerShell uses the same install and test commands.
 
 No Foundry server, model weights, PDF files, vector database, or Streamlit process
-is required. The tests compile selected, unchanged function bodies from `app.py`
-with their actual math and table dependencies. They do not copy the router rules
+is required. Routing functions are imported directly from `query_routing.py`. Other checks
+compile selected function bodies from `app.py` with their actual math and table
+dependencies. They do not copy the router rules
 into a separate implementation. This temporary extraction approach will be
 replaced with direct imports when the query engine is separated from the UI.
 
-## Current status after stage 4
+## Current status after stage 5
 
-42 tests: **40 pass, 2 expected failures**. FY24 display and partial math
-execution regressions are fixed. See `MATH_EXECUTION_RELIABILITY.md` for the
-fail-closed execution and app response contract.
-See `CARBON_DATA_VERIFICATION.md` for the 51-value carbon audit and
+50 tests: **49 pass, 1 expected failure**. FY24 display, partial math execution,
+and water calculator routing regressions are fixed. See
+`MATH_EXECUTION_RELIABILITY.md` and `QUERY_ROUTING_RELIABILITY.md` for execution
+and routing contracts. The remaining tracked regression is Xbox domain rejection.
+See `CARBON_DATA_VERIFICATION.md` for the carbon audit and
 `RESOURCE_DATA_VERIFICATION.md` for water/energy source checks and units.
-Waste, retrieval and model integration remain unverified.
+Waste, requested-year answer handling, retrieval and real model integration remain unverified.
 
 ## Recorded initial baseline
 
