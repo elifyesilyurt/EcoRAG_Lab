@@ -216,64 +216,40 @@ def get_energy_metrics_df() -> pd.DataFrame:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def get_waste_metrics_df() -> pd.DataFrame:
+    """Off-site operational inventory: 2026 Fact Sheet Table 9, p.7, mt.
+
+    FY25 includes cloud hardware packaging; prior years were not adjusted.
+    Construction/deconstruction waste is outside this inventory's scope.
     """
-    Toplam atık üretimi, yönlendirilen operasyonel atık, depolama ve sertifikasyon verileri.
-    FY23 için 18,537 metric tons operasyonel atık yönlendirme verisini içerir.
-    """
-    data = {
-        "Metric": [
-            "Total Waste Generated (metric tons)",
-            "Total Operational Waste Diverted from Landfills and Incinerators (metric tons)",
-            "Waste Diverted (Recycled + Reused + Composted) (metric tons)",
-            "Waste to Landfill (metric tons)",
-            "Diversion Rate (%)",
-            "Zero Waste to Landfill Certified Sites",
-            "Zero Waste to Landfill Certified Datacenters (UL Solutions)",
-        ],
-        "FY20_Baseline": [189_000, 0, 119_000, 70_000, 63.0, 0, 0],
-        "FY23":          [215_000, 18_537, 160_000, 55_000, 74.4, 10, 10],
-        "FY24":          [237_000, 188_000, 188_000, 49_000, 79.3, 9, 10],
-        "FY25":          [265_000, 218_000, 218_000, 47_000, 82.3, 14, 14],
-    }
-    return pd.DataFrame(data)
+    frame = pd.DataFrame({
+        "Metric": ["Total Waste Generated", "Total Operational Waste Diverted",
+                   "Waste Directed to Disposal", "Non-hazardous Waste Landfilled"],
+        "Unit": ["mt"] * 4,
+        "FY20": [40571, 29153, 11418, 10848],
+        "FY21": [22518, 15278, 7240, 6957],
+        "FY22": [29596, 17149, 12447, 12204],
+        "FY23": [36392, 24663, 11729, 11510],
+        "FY24": [41290, 28285, 13005, 12637],
+        "FY25": [58868, 36149, 22719, 21540],
+    })
+    frame.attrs["source"] = "2026 Data Fact Sheet Table 9, p.7"
+    frame.attrs["scope_change"] = "FY25 includes cloud hardware packaging; earlier years were not adjusted."
+    return frame
+
+
+def get_waste_prevention_df() -> pd.DataFrame:
+    """On-site prevention is separate from off-site inventory: Table 10, p.8."""
+    return pd.DataFrame({
+        "Metric": ["Waste Reused On-site", "Waste Reduced On-site", "Total Waste Prevented"],
+        "Unit": ["mt"] * 3, "FY24": [4949, 433, 5382], "FY25": [4961, 2685, 7646],
+    })
 
 
 def get_zero_waste_certifications_df() -> pd.DataFrame:
-    """
-    Zero Waste standartları, dış doğrulama kuruluşları ve FY23 sertifikasyon detayları.
-    Kaynak: 2024 Report (p. 5, 7, 36) & 2025 Report (p. 47)
-    """
-    data = {
-        "Attribute": [
-            "External Certification Standard",
-            "Validation Body / Standard Provider",
-            "Certification Tiers",
-            "Datacenters Certified in FY23 (under UL Standard)",
-            "Total Operational Waste Diverted in FY23 (metric tons)",
-            "Cloud Hardware Reuse and Recycle Rate (FY23)",
-            "2030 Zero Waste Operational Diversion Target (%)",
-        ],
-        "Detail / Value": [
-            "UL Solutions Zero Waste to Landfill (UL 2799 ECVP)",
-            "UL Solutions (Underwriters Laboratories)",
-            "Silver (90-94%), Gold (95-99%), Platinum (100% diversion)",
-            "10 datacenters certified",
-            "18,537 metric tons",
-            "89.4%",
-            "90% operational waste diversion",
-        ],
-        "Report_Source": [
-            "2024 Report (p. 36) & 2025 Report (p. 47)",
-            "2024 Report (p. 36)",
-            "2024 Report (p. 36) / UL Standard",
-            "2024 Report (p. 36)",
-            "2024 Report (p. 5, 7, 36)",
-            "2024 Report (p. 5, 36)",
-            "2024 Report (p. 36)",
-        ]
-    }
-    return pd.DataFrame(data)
-
+    """No audited site-count/tier series: missing evidence must not become zero."""
+    frame = pd.DataFrame(columns=["Attribute", "Detail / Value", "Report_Source"])
+    frame.attrs["unavailable_reason"] = "Site counts and certification tiers have not been source-audited."
+    return frame
 
 
 def get_verified_water_context() -> str:

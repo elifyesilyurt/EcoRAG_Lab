@@ -192,3 +192,83 @@ class TestPackagingPeriods(unittest.TestCase):
             'get_packaging_calendar_metrics_df': get_packaging_calendar_metrics_df,
         })
         self.assertIn('3.1', functions['compute_packaging_summary']('en'))
+
+
+class TestWasteInventory(unittest.TestCase):
+    def test_source_values_all_years(self):
+        from esg_tables import get_waste_metrics_df
+        frame = get_waste_metrics_df().set_index('Metric')
+        # Independent transcription: 2026 Fact Sheet Table 9, page 7.
+        expected = {
+            'Total Waste Generated': [40571, 22518, 29596, 36392, 41290, 58868],
+            'Total Operational Waste Diverted': [29153, 15278, 17149, 24663, 28285, 36149],
+            'Waste Directed to Disposal': [11418, 7240, 12447, 11729, 13005, 22719],
+            'Non-hazardous Waste Landfilled': [10848, 6957, 12204, 11510, 12637, 21540],
+        }
+        for metric, values in expected.items():
+            for year, value in zip(['FY20', 'FY21', 'FY22', 'FY23', 'FY24', 'FY25'], values):
+                self.assertEqual(frame.loc[metric, year], value, (metric, year))
+        self.assertEqual(set(frame['Unit']), {'mt'})
+        self.assertNotIn('FY26', frame.columns)
+        for year in ['FY20', 'FY21', 'FY22', 'FY23', 'FY24', 'FY25']:
+            self.assertEqual(frame.loc['Total Waste Generated', year],
+                             frame.loc['Total Operational Waste Diverted', year] + frame.loc['Waste Directed to Disposal', year])
+
+    def test_prevention_is_separate_and_missing_period_not_zero(self):
+        from esg_tables import get_waste_prevention_df
+        frame = get_waste_prevention_df().set_index('Metric')
+        for year, reused, reduced, total in [('FY24', 4949, 433, 5382), ('FY25', 4961, 2685, 7646)]:
+            self.assertEqual(frame.loc['Waste Reused On-site', year], reused)
+            self.assertEqual(frame.loc['Waste Reduced On-site', year], reduced)
+            self.assertEqual(frame.loc['Total Waste Prevented', year], total)
+            self.assertEqual(reused + reduced, total)
+        self.assertNotIn('FY23', frame.columns)
+
+    def test_uncertified_counts_are_unavailable(self):
+        from esg_tables import get_zero_waste_certifications_df
+        frame = get_zero_waste_certifications_df()
+        self.assertTrue(frame.empty)
+        self.assertIn('unavailable_reason', frame.attrs)
+
+    def test_dashboard_and_bilingual_summaries_share_source(self):
+        from esg_tables import get_waste_metrics_df, get_waste_prevention_df
+        functions = load_app_functions({'compute_zero_waste_summary', 'compute_waste_dashboard_metrics'}, {
+            'get_waste_metrics_df': get_waste_metrics_df, 'get_waste_prevention_df': get_waste_prevention_df,
+        })
+        for lang in ['tr', 'en']:
+            kpi = functions['compute_waste_dashboard_metrics'](lang)
+            self.assertEqual(kpi['value'], '36,149 mt')
+            self.assertIn('61.41%', kpi['delta'])
+            summary = functions['compute_zero_waste_summary'](lang)
+            for value in ['58,868', '36,149', '22,719', '7,646', 'FY24', 'FY25', 'Tables 9/10']:
+                self.assertIn(value, summary)
+            for wrong in ['218,000', '82.3%', '11.8', '89.4%']:
+                self.assertNotIn(wrong, summary)
+
+    def test_zero_denominator_has_no_invented_rate(self):
+        from esg_tables import get_waste_metrics_df
+        def zero_total():
+            frame = get_waste_metrics_df()
+            frame.loc[frame['Metric'] == 'Total Waste Generated', 'FY25'] = 0
+            return frame
+        functions = load_app_functions({'compute_waste_dashboard_metrics'}, {'get_waste_metrics_df': zero_total})
+        self.assertEqual(functions['compute_waste_dashboard_metrics']('en')['delta'], '—')
+
+
+class TestWasteEvidenceScope(unittest.TestCase):
+    def test_audited_waste_rows_carry_scope_but_carbon_rows_do_not(self):
+        from ingestion_core import source_hash, prioritize_audited_evidence
+        from ingest_all_reports import audited_source_chunks
+        pdf = ROOT / 'docs/Microsoft_2026_Environmental_Data_Fact_Sheet.pdf'
+        chunks = audited_source_chunks(pdf.name, source_hash(pdf))
+        waste = [c for c in chunks if c['page'] in (7, 8) and 'Metric: ' in c['content'] and 'Waste' in c['content']]
+        self.assertEqual(len(waste), 7)
+        self.assertTrue(all('prior years were not adjusted' in c['content'] for c in waste))
+        self.assertTrue(all('cloud hardware packaging' not in c['content'] for c in chunks if c['page'] == 3))
+        candidates = [dict(c, chunk_type=c['type'], score=.4) for c in waste]
+        ranked = prioritize_audited_evidence(candidates, 'FY25 operasyonel atık yönlendirme', .15)
+        self.assertIn('Metric: Total Operational Waste Diverted', ranked[0]['content'])
+
+
+if __name__ == '__main__':
+    unittest.main()

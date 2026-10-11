@@ -163,7 +163,9 @@ def prioritize_audited_evidence(scores, query, minimum_score=0):
     aliases = {'su': 'water', 'cekim': 'withdrawal', 'withdrawal': 'withdrawal',
                'tuketim': 'consumption', 'yenileme': 'replenishment',
                'enerji': 'energy', 'elektrik': 'electricity', 'emisyon': 'emissions',
-               'emission': 'emissions', 'kategori': 'cat', 'category': 'cat'}
+               'emission': 'emissions', 'kategori': 'cat', 'category': 'cat',
+               'atik': 'waste', 'atık': 'waste', 'yonlendir': 'diverted', 'bertaraf': 'disposal',
+               'uretil': 'generated', 'onlen': 'prevented', 'operasyonel': 'operational'}
     def tokens(text):
         normalized = ''.join(char for char in unicodedata.normalize('NFD', text.lower())
                              if unicodedata.category(char) != 'Mn')

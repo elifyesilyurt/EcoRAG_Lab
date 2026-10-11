@@ -3,7 +3,7 @@ import glob
 import re
 from typing import List, Dict, Any, Optional
 import pdfplumber
-from esg_tables import get_carbon_emissions_df, get_water_metrics_df, get_energy_metrics_df
+from esg_tables import get_carbon_emissions_df, get_water_metrics_df, get_energy_metrics_df, get_waste_metrics_df, get_waste_prevention_df
 from ingestion_core import table_row_evidence, source_hash, replace_index
 
 DB_PATH = "rag_storage.db"
@@ -383,7 +383,8 @@ def audited_source_chunks(doc_title, digest):
     annual = water['Metric'] == "Water Replenishment (million m3)"
     if "Fact_Sheet" in doc_title:
         sources = ((get_carbon_emissions_df(), 3, "mtCO2e"),
-                   (get_energy_metrics_df(), 6, None), (water[~annual], 7, None))
+                   (get_energy_metrics_df(), 6, None), (water[~annual], 7, None),
+                   (get_waste_metrics_df(), 7, None), (get_waste_prevention_df(), 8, None))
     else:
         sources = ((water[annual], 25, None),)
     chunks = []
@@ -398,7 +399,7 @@ def audited_source_chunks(doc_title, digest):
             chunks.append({
                 "year": "2026", "title": f"{doc_title} (p.{page})",
                 "content": format_chunk_with_metadata(doc_title, "2026", page,
-                    "[SOURCE AUDITED TABLE]\n" + content, is_table=True),
+                    "[SOURCE AUDITED TABLE]\n" + content + ("\nInventory scope: FY25 includes cloud hardware packaging; prior years were not adjusted. Construction/deconstruction waste is excluded. On-site prevention must not be added to off-site diversion." if page in (7, 8) and "Waste" in content else ""), is_table=True),
                 "type": "audited_table", "page": page, "source_sha256": digest,
             })
     return chunks

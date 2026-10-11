@@ -304,7 +304,7 @@ class TestAuditedSources(unittest.TestCase):
         self.assertEqual(source_hash(ROOT / 'docs' / REPORT), fixture['annual_replenishment_source']['sha256'])
         fact_chunks = ingestion.audited_source_chunks(FACT_SHEET, fixture['source_pdf_sha256'])
         annual_chunks = ingestion.audited_source_chunks(REPORT, fixture['annual_replenishment_source']['sha256'])
-        self.assertEqual({chunk['page'] for chunk in fact_chunks}, {3, 6, 7})
+        self.assertEqual({chunk['page'] for chunk in fact_chunks}, {3, 6, 7, 8})
         self.assertEqual({chunk['page'] for chunk in annual_chunks}, {25})
         self.assertTrue(all('Water Replenishment' not in chunk['content'] for chunk in fact_chunks))
         self.assertTrue(all('Water Replenishment' in chunk['content'] for chunk in annual_chunks))

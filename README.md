@@ -13,7 +13,7 @@
 
 **Production-Grade, Zero-Hallucination On-Device Sustainability RAG & Deterministic ESG Engine**
 
-*Built on Microsoft Foundry Local (`phi-4-mini`) · Covering 2024, 2025 & 2026 Environmental Sustainability Reports (1,581 Chunks)*
+*Built on Microsoft Foundry Local (`phi-4-mini`) · Covering 2024, 2025 & 2026 Environmental Sustainability Reports (1,588 Chunks)*
 
 [🇬🇧 English Documentation](README.md) | [🇹🇷 Türkçe Dokümantasyon](README_TR.md)
 
@@ -24,7 +24,7 @@
 
 
 
-> Current development branch: `fix/ecorag-reliability`. 104 offline tests pass. The index includes three reports and the 2026 data fact sheet; the historical benchmark scores below have not been rerun against the rebuilt index. See [INGESTION_RELIABILITY.md](INGESTION_RELIABILITY.md) for source and rebuild checks.
+> Current development branch: `fix/ecorag-reliability`. 114 offline tests pass. The index includes three reports and the 2026 data fact sheet; the historical benchmark scores below have not been rerun against the rebuilt index. See [INGESTION_RELIABILITY.md](INGESTION_RELIABILITY.md) for source and rebuild checks.
 
 ## 📸 Visual Showcase & User Interface
 
@@ -92,7 +92,7 @@ graph TD
         TAB --> EMB["nomic-embed-text-v1.5<br/>(768-dim, Normalized)"]
         VIS --> EMB
         TEXT --> EMB
-        EMB --> DB[("SQLite Vector DB<br/>rag_storage.db (1,581 Chunks)")]
+        EMB --> DB[("SQLite Vector DB<br/>rag_storage.db (1,588 Chunks)")]
     end
 
     subgraph RUNTIME["⚙️ 2. Real-Time Execution Engine (app.py)"]
@@ -191,7 +191,7 @@ print(f"5-Year Emissions Delta: +{delta_pct:.2f}%")
 
 ---
 
-## 📚 4. Multi-Year Report Scope (1,581 Chunks)
+## 📚 4. Multi-Year Report Scope (1,588 Chunks)
 
 The system indexes **3 official Microsoft Environmental Sustainability Reports and the 2026 Environmental Data Fact Sheet**:
 
@@ -201,7 +201,7 @@ The system indexes **3 official Microsoft Environmental Sustainability Reports a
 | `Microsoft_2025_Sustainability_Report.pdf` | 90 | **486 Chunks** | FY25 Scope 1/2/3 tables, Carbon Removal Table 3, Water Table 1, Energy accounting |
 | `Microsoft_2024_Sustainability_Report.pdf` | 88 | **488 Chunks** | FY20 baseline comparisons, FY23 historical data, UL 2799 Zero Waste certifications |
 | `Microsoft_2026_Environmental_Data_Fact_Sheet.pdf` | 28 | **309 Chunks** | Source-audited carbon, energy and water inventory tables |
-| **Total Production Index** | **272 Pages** | **1,581 Chunks** | **SQLite WAL Vector Database (`rag_storage.db`)** |
+| **Total Production Index** | **272 Pages** | **1,588 Chunks** | **SQLite WAL Vector Database (`rag_storage.db`)** |
 
 ---
 
@@ -271,7 +271,7 @@ python generate_and_run_500_benchmark.py
 ├── benchmark_500_dataset.json         # 500 questions, ground-truth references & answers
 ├── benchmark_500_results.json         # Detailed latency, faithfulness & execution logs
 ├── run_benchmarks.py                  # 50-question CLI benchmark suite
-├── rag_storage.db                     # SQLite vector database with 1581 indexed chunks
+├── rag_storage.db                     # SQLite vector database with 1588 indexed chunks
 ├── docs/                              # Official source Microsoft Sustainability PDF reports
 │   ├── 2026-Microsoft-Environmental-Sustainability-Report-PDF.pdf
 │   ├── Microsoft_2025_Sustainability_Report.pdf

@@ -19,6 +19,7 @@ from esg_tables import (
     get_water_replenishment_projects_df,
     get_energy_metrics_df,
     get_waste_metrics_df,
+    get_waste_prevention_df,
     get_zero_waste_certifications_df,
     get_packaging_metrics_df,
     get_packaging_calendar_metrics_df
@@ -637,35 +638,31 @@ def compute_carbon_removal_summary(lang: str = "tr") -> str:
 ### 💡 Strategic Action
 * **Advance Market Commitments:** Catalysing the market for novel, highly durable Direct Air Capture and mineral carbonation solutions."""
 
+def compute_waste_dashboard_metrics(lang: str = "tr") -> dict:
+    frame = get_waste_metrics_df().set_index("Metric")
+    total = float(frame.loc["Total Waste Generated", "FY25"])
+    diverted = float(frame.loc["Total Operational Waste Diverted", "FY25"])
+    ratio = diverted / total * 100 if total else None
+    return {"value": f"{diverted:,.0f} mt",
+            "delta": (f"{ratio:.2f}% " + ("yönlendirme (hesaplanan)" if lang == "tr" else "diversion (calculated)")) if ratio is not None else "—"}
+
+
 def compute_zero_waste_summary(lang: str = "tr") -> str:
-    if lang == "tr":
-        return """Microsoft'un 2024 ve 2026 raporları arasında UL 2799 Sıfır Atık sertifikalı veri merkezi sayısı **10'dan 14 tesise (+4 yeni tesis)** çıkmış, düzenli depolama ve yakma tesislerinden yönlendirilen operasyonel atık miktarı 18,537 tondan **218,000 metrik tona (~11.8 kat)** yükselmiştir. Bulut donanımlarının **%89.4'ü** Microsoft Circular Centers aracılığıyla yeniden kullanıma kazandırılmıştır.
-
-### 📊 Sıfır Atık ve Döngüsellik İlerleme Tablosu (2024–2026 Raporları)
-
-| Performans Göstergesi | Önceki Durum (FY23) | Son Durum (FY25/2026) | Net Gelişim & Değişim | Kullanılan Standart & Çerçeve |
-| :--- | :---: | :---: | :---: | :--- |
-| 🏢 **Sertifikalı Veri Merkezi Sayısı** | 10 Veri Merkezi | **14 Tesis** | **+4 Yeni Tesis Artışı** | **UL 2799 ECVP** (Underwriters Laboratories) |
-| ♻️ **Yönlendirilen Operasyonel Atık** | `18,537 metrik ton` | **`218,000 metrik ton`** | **~11.8 Kat Artış** | TRUE Zero Waste & UL Çerçevesi |
-| 🖥️ **Bulut Donanımı Yeniden Kullanım** | Başlangıç Seviyesi | **%89.4** | **Yüksek Döngüsellik** | **Microsoft Circular Centers** |
-| 🎯 **Operasyonel Atık Yönlendirme Hedefi** | %85+ | **%90 ve üzeri** | **2030 Hedef Uyumlu** | Silver (%90-94), Gold (%95-99), Platinum (%100) |
-
-### 💡 Temel İnisiyatifler
-* **Döngüsel Merkezler (Circular Centers):** Kullanım ömrünü tamamlayan sunucu ve ağ bileşenleri hurdaya çıkarılmayıp test edilerek yeniden kullanım zincirine dahil edilmektedir."""
-    else:
-        return """Between 2024 and 2026 reports, UL 2799 Zero Waste certified datacenters increased from **10 to 14 sites (+4 sites)**, operational waste diverted grew from 18,537 to **218,000 metric tons (~11.8x)**, and cloud hardware achieved an **89.4%** reuse/recycle rate via Circular Centers.
-
-### 📊 Zero Waste & Circularity Progress Table (2024–2026 Reports)
-
-| Indicator / Performance Area | Previous Baseline (FY23) | Current Status (FY25/2026) | Net Progress & Delta | Standard / Framework |
-| :--- | :---: | :---: | :---: | :--- |
-| 🏢 **Certified Datacenter Sites** | 10 Datacenters | **14 Certified Sites** | **+4 Site Expansion** | **UL 2799 ECVP** (Underwriters Laboratories) |
-| ♻️ **Operational Waste Diverted** | `18,537 metric tons` | **`218,000 metric tons`** | **~11.8x Expansion** | TRUE Zero Waste & UL Standard |
-| 🖥️ **Cloud Hardware Reuse & Recycle** | Initial Phases | **89.4%** | **High Circularity** | **Microsoft Circular Centers** |
-| 🎯 **2030 Diversion Target** | 85%+ | **90% and above** | **Target Aligned** | Silver (90-94%), Gold (95-99%), Platinum (100%) |
-
-### 💡 Strategic Action
-* **Circular Centers:** Co-located hardware refurbishment centers extend computing asset lifecycles and divert electronic waste from landfills."""
+    frame = get_waste_metrics_df()
+    prevention = get_waste_prevention_df()
+    years = [name for name in frame.columns if name.startswith("FY")]
+    lines = ["Operasyonel atık — metrik ton (mt)" if lang == "tr" else "Operational waste — metric tons (mt)",
+             "| Metric | " + " | ".join(years) + " |", "|---|" + "---:|" * len(years)]
+    for _, row in frame.iterrows():
+        lines.append("| " + row["Metric"] + " | " + " | ".join(f"{row[year]:,.0f}" for year in years) + " |")
+    lines.append(str(compute_waste_dashboard_metrics(lang)["delta"]))
+    for _, row in prevention.iterrows():
+        lines.append(f"{row['Metric']}: FY24 {row['FY24']:,.0f} mt; FY25 {row['FY25']:,.0f} mt.")
+    lines.append(("Yerinde önleme, saha dışına yönlendirme miktarına eklenmez. FY25 kapsamına bulut donanımı ambalajları dahil edilmiştir; önceki yıllar buna göre düzeltilmemiştir. İnşaat/yıkım atıkları bu envanterin dışındadır. Sertifikalı tesis sayısı bu tablolardan çıkarılamaz."
+                  if lang == "tr" else
+                  "On-site prevention must not be added to off-site diversion. FY25 includes cloud hardware packaging; prior years were not adjusted. Construction/deconstruction waste is outside this inventory. Certified site counts cannot be inferred from these tables."))
+    lines.append("Source: [2026 Data Fact Sheet, Tables 9/10, pp.7–8](https://aka.ms/SustainabilityFactsheet2026).")
+    return "\n\n".join(lines)
 
 def compute_packaging_summary(lang: str = "tr") -> str:
     frame = get_packaging_metrics_df()
@@ -933,28 +930,12 @@ def get_esg_impact_insight(query: str, answer: str, lang: str = "tr"):
             )
         }
     elif any(k in combined for k in ["atık", "waste", "sıfır atık", "zero waste", "plastik", "plastic", "ambalaj", "packaging", "ul 2799", "circular"]):
-        if lang == "tr":
-            return {
-                "title": "Sürdürülebilirlik Uyum & Aksiyon Özeti",
-                "pillar": "♻️ Sıfır Atık & Döngüsel Ekonomi (Zero Waste & Circular Economy)",
-                "target": "2030 Sıfır Atık & %90+ Operasyonel Çöpten Kurtarma",
-                "actions": (
-                    "• **14 UL 2799 Sertifikalı Tesis:** Underwriters Laboratories tarafından bağımsız denetlenen sıfır atık veri merkezi ağı 14 tesise ulaştı.\n\n"
-                    "• **Ambalaj ölçüm dönemleri:** FY25 tek kullanımlık plastik oranı %4.2; 31 Aralık 2025 takvim yılı sonu oranı %0.07 (2026 Data Fact Sheet, Tablo 11, s.8). Bu dönemler birbirinin yerine kullanılamaz.\n\n"
-                    "• **Microsoft Circular Centers:** Ömrünü tamamlayan sunucuların %89.4'ü parça düzeyinde yenilenerek yeniden donanım döngüsüne sokuldu."
-                )
-            }
-        else:
-            return {
-                "title": "ESG Alignment & Corporate Action Insight",
-                "pillar": "♻️ Zero Waste & Circular Economy",
-                "target": "2030 Zero Waste & 90%+ Operational Landfill Diversion",
-                "actions": (
-                    "• **14 UL 2799 Certified Datacenter Sites:** Validated zero waste to landfill operations through independent Underwriters Laboratories auditing.\n\n"
-                    "• **Packaging reporting periods:** FY25 single-use plastics 4.2%; calendar year ended December 31, 2025: 0.07% (2026 Data Fact Sheet, Table 11, p.8). These periods are not interchangeable.\n\n"
-                    "• **Circular Centers Reuse Engine:** Diverted 89.4% of cloud and datacenter hardware components back into operational reuse."
-                )
-            }
+        return {
+            "title": "Sürdürülebilirlik Uyum & Aksiyon Özeti" if lang == "tr" else "ESG Alignment & Corporate Action Insight",
+            "pillar": "Sıfır Atık & Döngüsellik" if lang == "tr" else "Zero Waste & Circularity",
+            "target": "2030 Zero Waste",
+            "actions": compute_zero_waste_summary(lang) + "\n\n" + compute_packaging_summary(lang),
+        }
     elif any(k in combined for k in ["ekosistem", "ecosystem", "biyoçeşitlilik", "biodiversity", "doğa", "nature", "planetary", "amsterdam", "madrid"]):
         if lang == "tr":
             return {
@@ -1014,7 +995,7 @@ TEXTS = {
         "kpi_water_delta": "FY24–FY25 yıllık hacim değişimi",
         "kpi_water_cap": "Kaynak: 2026 raporu, s.25 • Yıllık gerçekleşen hacim",
         "kpi_waste_title": "Yönlendirilen Katı Atık (FY25)",
-        "kpi_waste_delta": "%82.3 Çöpten Kurtarma Oranı",
+        "kpi_waste_delta": "FY25 hesaplanan yönlendirme oranı",
         "kpi_waste_cap": "Geri Dönüşüm, Yeniden Kullanım ve Kompost",
         "dash_title": "Microsoft Kurumsal ESG Bilançosu",
         "dash_caption": "2024–2025–2026 Microsoft Çevresel Sürdürülebilirlik Raporları Doğrulanmış Verileri",
@@ -1068,7 +1049,7 @@ TEXTS = {
         "kpi_water_delta": "FY24–FY25 annual volume change",
         "kpi_water_cap": "Source: 2026 report, p.25 • Realized annual volume",
         "kpi_waste_title": "Diverted Solid Waste (FY25)",
-        "kpi_waste_delta": "82.3% Diversion Rate",
+        "kpi_waste_delta": "FY25 calculated diversion rate",
         "kpi_waste_cap": "Recycled, Reused & Composted",
         "dash_title": "Microsoft Corporate ESG Balance Sheet",
         "dash_caption": "Verified Data from 2024–2025–2026 Microsoft Environmental Sustainability Reports",
@@ -3169,8 +3150,8 @@ with tab_dashboard:
         with st.container(border=True):
             st.metric(
                 label=T["kpi_waste_title"],
-                value="218,000 mt",
-                delta=T["kpi_waste_delta"],
+                value=compute_waste_dashboard_metrics("tr" if is_tr else "en")["value"],
+                delta=compute_waste_dashboard_metrics("tr" if is_tr else "en")["delta"],
                 delta_color="normal"
             )
             st.caption(T["kpi_waste_cap"])
@@ -3203,7 +3184,11 @@ with tab_dashboard:
         st.markdown(f"#### :material/delete_forever: **{T['dash_t4']}**")
         st.caption(T["dash_t4_cap"])
         zero_waste_df = get_zero_waste_certifications_df()
-        st.dataframe(zero_waste_df, width="stretch", hide_index=True)
+        if zero_waste_df.empty:
+            st.info(zero_waste_df.attrs["unavailable_reason"])
+        else:
+            st.dataframe(zero_waste_df, width="stretch", hide_index=True)
+        st.dataframe(get_waste_metrics_df(), width="stretch", hide_index=True)
 
     with st.container(border=True):
         st.markdown(f"#### :material/fact_check: **{T['dash_t5']}**")
