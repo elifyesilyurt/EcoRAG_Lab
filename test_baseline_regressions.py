@@ -11,6 +11,9 @@ import os
 from pathlib import Path
 import re
 import unittest
+from unittest.mock import patch
+
+import pandas as pd
 
 from dynamic_math_engine import DynamicMathExecutor, is_mathematical_query
 from esg_tables import get_carbon_emissions_df
@@ -82,6 +85,49 @@ class TestWorkingBaseline(unittest.TestCase):
                 self.assertIn(f"{total:,}", APP["compute_carbon_trend_summary"](language))
 
 
+class TestSourceVerifiedCarbon(unittest.TestCase):
+    def test_all_emission_values_match_source_table(self):
+        fixture = json.loads(ROOT.joinpath("tests/fixtures/carbon_emissions_2026.json").read_text())
+        frame = get_carbon_emissions_df().set_index("Metric")
+        self.assertEqual(set(frame.index), {row["metric"] for row in fixture["rows"]})
+        for row in fixture["rows"]:
+            for column, expected in zip(fixture["columns"], row["values"]):
+                with self.subTest(metric=row["metric"], year=column):
+                    self.assertEqual(frame.loc[row["metric"], column], expected)
+
+    def test_summary_reads_each_total_from_table(self):
+        frame = get_carbon_emissions_df()
+        totals = [10_000_000, 12_000_000, 15_000_000]
+        mask = frame["Metric"].str.startswith("Total GHG")
+        frame.loc[mask, ["FY20_Baseline", "FY24", "FY25"]] = totals
+        with patch.dict(APP, {"get_carbon_emissions_df": lambda: frame}):
+            for language in ("tr", "en"):
+                summary = APP["compute_carbon_trend_summary"](language)
+                row = next(line for line in summary.splitlines()
+                           if line.startswith("|") and ("Toplam Sera Gazı" in line or "Total GHG Emissions" in line))
+                for cell, expected in zip(row.split("|")[2:5], totals):
+                    self.assertIn(f"{expected:,}", cell)
+                self.assertIn("+5,000,000", summary)
+                self.assertIn("50.00", summary)
+                self.assertNotIn("21,121,000", summary)
+
+    def test_category_one_selection_is_not_category_eleven(self):
+        frame = get_carbon_emissions_df()
+        # Put Category 11 first to catch substring-based Cat 1 selection.
+        first = frame[frame["Metric"].str.contains("Cat 11")]
+        frame = pd.concat([first, frame.drop(first.index)], ignore_index=True)
+        with patch.dict(APP, {"get_carbon_emissions_df": lambda: frame}):
+            for language in ("tr", "en"):
+                self.assertIn("5,129,000", APP["compute_carbon_trend_summary"](language))
+
+    def test_summary_identifies_source_and_accounting_basis(self):
+        for language in ("tr", "en"):
+            summary = APP["compute_carbon_trend_summary"](language)
+            self.assertIn("https://aka.ms/SustainabilityFactsheet2026", summary)
+            self.assertIn("pazar bazlı" if language == "tr" else "market-based", summary)
+            self.assertIn("yuvarlanmıştır" if language == "tr" else "rounded", summary)
+
+
 class TestKnownRegressions(unittest.TestCase):
     @known_defect
     def test_failed_final_calculation_must_not_succeed(self):
@@ -107,11 +153,9 @@ class TestKnownRegressions(unittest.TestCase):
         cells = rows[0].split("|")
         self.assertIn(f"{expected:,}", cells[3], "FY24 column must use FY24's stored value")
 
-    @known_defect
     def test_fy24_total_column_turkish(self):
         self.check_fy24_total_column("tr")
 
-    @known_defect
     def test_fy24_total_column_english(self):
         self.check_fy24_total_column("en")
 

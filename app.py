@@ -543,8 +543,8 @@ def compute_carbon_trend_summary(lang: str = "tr") -> str:
 
     cat_df = df[df["Metric"].str.startswith("Scope 3 Cat")].copy()
     cat_df["Share_FY25"] = (cat_df["FY25"] / s3["FY25"]) * 100
-    cat1 = cat_df[cat_df["Metric"].str.contains("Cat 1")].iloc[0]
-    cat2 = cat_df[cat_df["Metric"].str.contains("Cat 2")].iloc[0]
+    cat1 = cat_df[cat_df["Metric"] == "Scope 3 Cat 1 - Purchased Goods and Services"].iloc[0]
+    cat2 = cat_df[cat_df["Metric"] == "Scope 3 Cat 2 - Capital Goods"].iloc[0]
     cat1_share = round(float(cat1["Share_FY25"]), 2)
     cat2_share = round(float(cat2["Share_FY25"]), 2)
     combined_share = round(cat1_share + cat2_share, 2)
@@ -552,15 +552,15 @@ def compute_carbon_trend_summary(lang: str = "tr") -> str:
 
     if lang == "tr":
         lines = [
-            f"Microsoft'un FY20 baz yılından FY25'e kadar olan toplam sera gazı emisyonları (Scope 1, 2 ve 3) net **+{tot_delta:,} mtCO2e (+%{tot_pct:.2f})** artarak 13,061,000 mtCO2e'den **21,121,000 mtCO2e** seviyesine çıkmıştır. Bu artışın ana itici gücü, yapay zeka ve küresel bulut veri merkezi altyapı yatırımları nedeniyle büyüyen Scope 3 değer zinciri emisyonlarıdır (%{cat2_share} Kategori 2 ve %{cat1_share} Kategori 1).",
+            f"Microsoft'un FY20 baz yılından FY25'e kadar olan toplam sera gazı emisyonları (Scope 1, 2 ve 3) net **+{tot_delta:,} mtCO2e (+%{tot_pct:.2f})** artarak {tot_base:,} mtCO2e'den **{tot_fy25:,} mtCO2e** seviyesine çıkmıştır. FY25 Scope 3 emisyonlarının en büyük iki kategorisi Kategori 2 (%{cat2_share}) ve Kategori 1 (%{cat1_share}) olup toplam payları %{combined_share} seviyesindedir.",
             "",
             "### 📊 Sera Gazı Emisyon Karşılaştırması ve Kategori Dağılımı (FY20 - FY25)",
             "",
             "| Emisyon Kapsamı (Scope) | FY20 Baz Yılı | FY24 | FY25 | Net Değişim (FY20➔FY25) | Değişim Oranı |",
             "| :--- | :---: | :---: | :---: | :---: | :---: |",
-            f"| 🌐 **Toplam Sera Gazı (Total GHG)** | `13,061,000 mtCO2e` | `21,121,000 mtCO2e` | `21,121,000 mtCO2e` | `+{tot_delta:,} mtCO2e` | **+%{tot_pct:.2f}** |",
+            f"| 🌐 **Toplam Sera Gazı (Total GHG)** | `{tot_base:,} mtCO2e` | `{tot_fy24:,} mtCO2e` | `{tot_fy25:,} mtCO2e` | `+{tot_delta:,} mtCO2e` | **+%{tot_pct:.2f}** |",
             f"| 🏭 **Scope 1 (Doğrudan Operasyonel)** | `{int(s1['FY20_Baseline']):,} mtCO2e` | `{int(s1['FY24']):,} mtCO2e` | `{int(s1['FY25']):,} mtCO2e` | `+{int(s1['FY25']-s1['FY20_Baseline']):,} mtCO2e` | `+%{(s1['FY25']-s1['FY20_Baseline'])/s1['FY20_Baseline']*100:.1f}` |",
-            f"| ⚡ **Scope 2 (Pazar Bazlı Elektrik)** | `{int(s2m['FY20_Baseline']):,} mtCO2e` | `{int(s2m['FY24']):,} mtCO2e` | `{int(s2m['FY25']):,} mtCO2e` | `+{int(s2m['FY25']-s2m['FY20_Baseline']):,} mtCO2e` | `Dengeli PPA Tedariki` |",
+            f"| ⚡ **Scope 2 (Pazar Bazlı Elektrik)** | `{int(s2m['FY20_Baseline']):,} mtCO2e` | `{int(s2m['FY24']):,} mtCO2e` | `{int(s2m['FY25']):,} mtCO2e` | `+{int(s2m['FY25']-s2m['FY20_Baseline']):,} mtCO2e` | `+%{(s2m['FY25']-s2m['FY20_Baseline'])/s2m['FY20_Baseline']*100:.1f}` |",
             f"| ⛓️ **Scope 3 (Değer Zinciri)** | `{int(s3['FY20_Baseline']):,} mtCO2e` | `{int(s3['FY24']):,} mtCO2e` | `{int(s3['FY25']):,} mtCO2e` | `+{int(s3['FY25']-s3['FY20_Baseline']):,} mtCO2e` | `+%{(s3['FY25']-s3['FY20_Baseline'])/s3['FY20_Baseline']*100:.1f}` |",
             "",
             "### 🔍 Scope 3 Kategori Kırılımı ve Pay Dağılımı (FY25)",
@@ -573,21 +573,21 @@ def compute_carbon_trend_summary(lang: str = "tr") -> str:
             f"| 🌐 **Diğer Scope 3 Kategorileri** | Yakıt, iş seyahati, çalışan ulaşımı, lojistik | `{int(s3['FY25'] - combined_vol):,} mtCO2e` | `%{round(100 - combined_share, 2)}` |",
             f"| 🎯 **Toplam Scope 3 Hacmi** | Tüm Değer Zinciri Kümülatif | `{int(s3['FY25']):,} mtCO2e` | **%100.0** |",
             "",
-            "### 💡 Temel Stratejik Aksiyonlar",
-            "* **Karbon Uzaklaştırma:** Microsoft, bu değer zinciri artışını nötrlemek amacıyla 21.9 milyon tonluk rekor bir karbon uzaklaştırma portföyü sözleşmesi imzalamıştır.",
-            "* **Temiz Enerji Şartı:** Kilit tedarikçilere %100 karbonsuz elektrik kullanma zorunluluğu getirilmiş ve 34 GW'ı aşan temiz enerji alım anlaşması (PPA) yapılmıştır."
+            "### 💡 Hesaplama ve Kaynak Notları",
+            "* Scope 2 pazar bazlıdır; lokasyon bazlı değer toplam emisyona ayrıca eklenmez.",
+            "* Tarihsel değerler 2026 yayınına göre yeniden düzenlenmiştir. Scope 3 ara toplamları ve toplam emisyonlar en yakın bin mtCO2e değerine yuvarlanmıştır."
         ]
     else:
         lines = [
-            f"Between FY20 baseline and FY25, Microsoft's total greenhouse gas emissions grew by **+{tot_delta:,} mtCO2e (+{tot_pct:.2f}%)**, rising from 13,061,000 to **21,121,000 mtCO2e**. The primary driver was Scope 3 value chain emissions, dominated by Category 2 Capital Goods (**{cat2_share}%**) and Category 1 Purchased Goods (**{cat1_share}%**), which together constitute **{combined_share}%** of total Scope 3 emissions.",
+            f"Between FY20 baseline and FY25, Microsoft's total greenhouse gas emissions grew by **+{tot_delta:,} mtCO2e (+{tot_pct:.2f}%)**, rising from {tot_base:,} to **{tot_fy25:,} mtCO2e**. The largest FY25 Scope 3 categories were Category 2 Capital Goods (**{cat2_share}%**) and Category 1 Purchased Goods (**{cat1_share}%**), which together constitute **{combined_share}%** of total Scope 3 emissions.",
             "",
-            "### 📊 Verified GHG Emissions Comparison Table (FY20 Baseline ➔ FY24 ➔ FY25)",
+            "### 📊 GHG Emissions Comparison Table (FY20 Baseline ➔ FY24 ➔ FY25)",
             "",
             "| Emission Scope | FY20 Baseline | FY24 | FY25 | Net Delta (FY20➔FY25) | Growth Rate |",
             "| :--- | :---: | :---: | :---: | :---: | :---: |",
-            f"| 🌐 **Total GHG Emissions** | `13,061,000 mtCO2e` | `21,121,000 mtCO2e` | `21,121,000 mtCO2e` | `+{tot_delta:,} mtCO2e` | **+{tot_pct:.2f}%** |",
+            f"| 🌐 **Total GHG Emissions** | `{tot_base:,} mtCO2e` | `{tot_fy24:,} mtCO2e` | `{tot_fy25:,} mtCO2e` | `+{tot_delta:,} mtCO2e` | **+{tot_pct:.2f}%** |",
             f"| 🏭 **Scope 1 (Direct Operations)** | `{int(s1['FY20_Baseline']):,} mtCO2e` | `{int(s1['FY24']):,} mtCO2e` | `{int(s1['FY25']):,} mtCO2e` | `+{int(s1['FY25']-s1['FY20_Baseline']):,} mtCO2e` | `+{int(s1['FY25']-s1['FY20_Baseline'])/int(s1['FY20_Baseline'])*100:.1f}%` |",
-            f"| ⚡ **Scope 2 (Market-based)** | `{int(s2m['FY20_Baseline']):,} mtCO2e` | `{int(s2m['FY24']):,} mtCO2e` | `{int(s2m['FY25']):,} mtCO2e` | `+{int(s2m['FY25']-s2m['FY20_Baseline']):,} mtCO2e` | `Managed via PPAs` |",
+            f"| ⚡ **Scope 2 (Market-based)** | `{int(s2m['FY20_Baseline']):,} mtCO2e` | `{int(s2m['FY24']):,} mtCO2e` | `{int(s2m['FY25']):,} mtCO2e` | `+{int(s2m['FY25']-s2m['FY20_Baseline']):,} mtCO2e` | `+{(s2m['FY25']-s2m['FY20_Baseline'])/s2m['FY20_Baseline']*100:.1f}%` |",
             f"| ⛓️ **Scope 3 (Supply Chain)** | `{int(s3['FY20_Baseline']):,} mtCO2e` | `{int(s3['FY24']):,} mtCO2e` | `{int(s3['FY25']):,} mtCO2e` | `+{int(s3['FY25']-s3['FY20_Baseline']):,} mtCO2e` | `+{int(s3['FY25']-s3['FY20_Baseline'])/int(s3['FY20_Baseline'])*100:.1f}%` |",
             "",
             "### 🔍 Scope 3 Major Category Breakdown (FY25)",
@@ -600,10 +600,12 @@ def compute_carbon_trend_summary(lang: str = "tr") -> str:
             f"| 🌐 **Remaining Categories** | Fuel, business travel, logistics, employee commuting | `{int(s3['FY25'] - combined_vol):,} mtCO2e` | `{round(100 - combined_share, 2)}%` |",
             f"| 🎯 **Total Scope 3 Volume** | Cumulative Value Chain Inventory | `{int(s3['FY25']):,} mtCO2e` | **100.0%** |",
             "",
-            "### 💡 Key Strategic Initiatives",
-            "* **Carbon Removal:** Contracted a record 21.9 million mtCO2e carbon removal portfolio.",
-            "* **Clean Power:** Secured over 34 GW of clean energy PPAs toward Carbon Negative 2030."
+            "### 💡 Calculation and Source Notes",
+            "* Scope 2 is market-based; location-based emissions are not added again to the total.",
+            "* Historical values are restated in the 2026 publication. Scope 3 subtotals and total emissions are rounded to the nearest thousand mtCO2e."
         ]
+    source_label = "Kaynak" if lang == "tr" else "Source"
+    lines.extend(["", f"{source_label}: [2026 Environmental Data Fact Sheet, Table 1A, p. 3](https://aka.ms/SustainabilityFactsheet2026)."])
     return "\n".join(lines)
 
 def compute_carbon_commitments_summary(lang: str = "tr") -> str:
@@ -3430,3 +3432,4 @@ with tab_system:
         └──► [Hibrit Vektör Arama] ──────► [Pydantic Doğrulama & Menşe] ────► [phi-4-mini Sentezi]
              (nomic-embed-text-v1.5)       (Sayfa No + Benzerlik Skoru)      (Doğrulanmış Çıktı)
         """, language="text")
+

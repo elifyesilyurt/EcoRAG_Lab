@@ -18,7 +18,13 @@ with their actual math and table dependencies. They do not copy the router rules
 into a separate implementation. This temporary extraction approach will be
 replaced with direct imports when the query engine is separated from the UI.
 
-## Recorded baseline
+## Current status after stage 2
+
+17 tests: **14 pass, 3 expected failures**. FY24 display regressions are fixed.
+See `CARBON_DATA_VERIFICATION.md` for the source-backed 51-value carbon audit.
+Water/energy/waste, retrieval and model integration remain unverified.
+
+## Recorded initial baseline
 
 - Existing math suite: 4 tests pass.
 - New working-behavior checks: 4 tests pass; 6 fixed queries cover language/routing.

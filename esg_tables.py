@@ -17,7 +17,10 @@ import pandas as pd
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # 1. KARBON EMİSYON METRİKLERİ  (Scope 1 / 2 / 3)
-#    Kaynak: 2025 Report — Table 1 (Appendix, GHG Emissions)
+#    Kaynak: 2026 Environmental Data Fact Sheet — Table 1A, p. 3
+#    URL: https://aka.ms/SustainabilityFactsheet2026
+#    Tarihsel değerler 2026 yayınına göre yeniden düzenlenmiştir.
+#    Scope 3 ara/toplamları en yakın bin mtCO2e değerine yuvarlanmıştır.
 #    Birim : mtCO2e (metric tons CO2 equivalent)
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -289,3 +292,4 @@ def get_zero_waste_certifications_df() -> pd.DataFrame:
         ]
     }
     return pd.DataFrame(data)
+

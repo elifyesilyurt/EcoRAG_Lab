@@ -1,0 +1,153 @@
+{
+  "source_url": "https://aka.ms/SustainabilityFactsheet2026",
+  "publication_year": 2026,
+  "page": 3,
+  "table": "1A",
+  "unit": "mtCO2e",
+  "scope_2_basis": "market-based",
+  "source_pdf_sha256": "0fd180837df00b3427c3eae484a492224b8f18c381e82a2aed98b04553a197f6",
+  "columns": [
+    "FY20_Baseline",
+    "FY24",
+    "FY25"
+  ],
+  "rows": [
+    {
+      "metric": "Scope 1",
+      "values": [
+        118100,
+        143510,
+        170887
+      ]
+    },
+    {
+      "metric": "Scope 2 (Location-based)",
+      "values": [
+        4328916,
+        9955368,
+        12030556
+      ]
+    },
+    {
+      "metric": "Scope 2 (Market-based)",
+      "values": [
+        456119,
+        259090,
+        2707428
+      ]
+    },
+    {
+      "metric": "Subtotal Scope 1 + Scope 2 (Market-based)",
+      "values": [
+        574219,
+        402600,
+        2878315
+      ]
+    },
+    {
+      "metric": "Scope 3 Cat 1 - Purchased Goods and Services",
+      "values": [
+        4587000,
+        5606000,
+        5129000
+      ]
+    },
+    {
+      "metric": "Scope 3 Cat 2 - Capital Goods",
+      "values": [
+        3434000,
+        6291000,
+        9044000
+      ]
+    },
+    {
+      "metric": "Scope 3 Cat 3 - Fuel and Energy Related Activities",
+      "values": [
+        323000,
+        708000,
+        1075000
+      ]
+    },
+    {
+      "metric": "Scope 3 Cat 4 - Upstream Transportation and Distribution",
+      "values": [
+        293000,
+        665000,
+        823000
+      ]
+    },
+    {
+      "metric": "Scope 3 Cat 5 - Waste Operations",
+      "values": [
+        9500,
+        8000,
+        14000
+      ]
+    },
+    {
+      "metric": "Scope 3 Cat 6 - Business Travel",
+      "values": [
+        329356,
+        260000,
+        239000
+      ]
+    },
+    {
+      "metric": "Scope 3 Cat 7 - Employee Commuting",
+      "values": [
+        317000,
+        208000,
+        284000
+      ]
+    },
+    {
+      "metric": "Scope 3 Cat 9 - Downstream Transportation",
+      "values": [
+        182000,
+        118000,
+        86000
+      ]
+    },
+    {
+      "metric": "Scope 3 Cat 11 - Use of Sold Products",
+      "values": [
+        2983000,
+        2417000,
+        1540000
+      ]
+    },
+    {
+      "metric": "Scope 3 Cat 12 - End of Life Treatment",
+      "values": [
+        17000,
+        3000,
+        3000
+      ]
+    },
+    {
+      "metric": "Scope 3 Cat 13 - Downstream Leased Assets",
+      "values": [
+        11800,
+        6000,
+        6000
+      ]
+    },
+    {
+      "metric": "Subtotal Scope 3",
+      "values": [
+        12487000,
+        16290000,
+        18243000
+      ]
+    },
+    {
+      "metric": "Total GHG Emissions (Scope 1 + 2 Market-based + 3)",
+      "values": [
+        13061000,
+        16693000,
+        21121000
+      ]
+    }
+  ],
+  "note": "Historical values restated in 2026. Scope 3 subtotal and total rounded to nearest thousand; do not force exact category sums."
+}
