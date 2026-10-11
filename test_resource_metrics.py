@@ -270,5 +270,81 @@ class TestWasteEvidenceScope(unittest.TestCase):
         self.assertIn('Metric: Total Operational Waste Diverted', ranked[0]['content'])
 
 
+
+class TestRemovalCommitments(unittest.TestCase):
+    def test_exact_allocations_and_missing_are_distinct(self):
+        from esg_tables import get_carbon_removal_df
+        frame = get_carbon_removal_df().set_index('Metric')
+        expected = {
+            'Total Contracted Carbon Removal': (5015019, 21927370),
+            'Contracted In-year Neutrality Allocation': (3549242, 1690940),
+            'Contracted FY2030 Carbon Negative Allocation': (1465777, 2804056),
+        }
+        for metric, values in expected.items():
+            for year, value in zip(['FY23', 'FY24'], values):
+                self.assertEqual(frame.loc[metric, year], value)
+        self.assertTrue(pd.isna(frame.loc['Contracted FY2031+ and Historic Allocation', 'FY23']))
+        self.assertEqual(frame.loc['Contracted FY2031+ and Historic Allocation', 'FY24'], 17432374)
+        self.assertTrue(frame['FY25'].isna().all())
+        self.assertNotIn('FY26', frame.columns)
+        self.assertEqual(set(frame['Unit']), {'mt'})
+        self.assertEqual(sum(frame.loc[m, 'FY24'] for m in frame.index if m != 'Total Contracted Carbon Removal'), 21927370)
+
+    def test_lower_bound_disclosure_not_exact_scalar(self):
+        from esg_tables import get_carbon_removal_disclosures_df
+        row = get_carbon_removal_disclosures_df().iloc[0]
+        self.assertEqual(row['Fiscal_Year'], 'FY25')
+        self.assertEqual(row['Disclosure'], 'More than 45 million metric tons')
+        self.assertIn('not realized FY25 removal', row['Measurement_Basis'])
+        self.assertNotIn('Value', row.index)
+
+    def test_technology_shares_unavailable(self):
+        from esg_tables import get_carbon_removal_by_type_df
+        frame = get_carbon_removal_by_type_df()
+        self.assertTrue(frame.empty)
+        self.assertIn('unavailable_reason', frame.attrs)
+
+    def test_bilingual_summary_reads_shared_data_and_preserves_basis(self):
+        from esg_tables import get_carbon_removal_df, get_carbon_removal_disclosures_df
+        functions = load_app_functions({'compute_carbon_removal_summary'}, {
+            'get_carbon_removal_df': get_carbon_removal_df,
+            'get_carbon_removal_disclosures_df': get_carbon_removal_disclosures_df, 'pd': pd,
+        })
+        for lang in ['tr', 'en']:
+            answer = functions['compute_carbon_removal_summary'](lang)
+            for text in ['FY23', 'FY24', 'FY25', '5,015,019', '21,927,370', 'More than 45 million', '—']:
+                self.assertIn(text, answer)
+            for invented in ['8,540,000', '38.9%', '4,210,000', '4.37']:
+                self.assertNotIn(invented, answer)
+
+    def test_audited_evidence_period_source_and_qualification(self):
+        from ingestion_core import source_hash
+        from ingest_all_reports import audited_source_chunks
+        sources = [('Microsoft_2024_Sustainability_Report.pdf', 'FY23', 19, '5015019'),
+                   ('Microsoft_2025_Sustainability_Report.pdf', 'FY24', 21, '21927370')]
+        for name, fiscal, page, value in sources:
+            chunks = audited_source_chunks(name, source_hash(ROOT / 'docs' / name))
+            self.assertEqual({c['page'] for c in chunks}, {page})
+            self.assertIn(f'{fiscal}: {value}', chunks[0]['content'])
+            self.assertTrue(all('not realized removals' in c['content'] for c in chunks))
+        name = '2026-Microsoft-Environmental-Sustainability-Report-PDF.pdf'
+        chunks = audited_source_chunks(name, source_hash(ROOT / 'docs' / name))
+        removal = [c for c in chunks if c['page'] == 32]
+        self.assertEqual(len(removal), 1)
+        self.assertIn('FY25: More than 45 million metric tons', removal[0]['content'])
+        self.assertIn('do not treat 45 million as an exact scalar', removal[0]['content'])
+
+
+class TestQualifiedRemovalExtraction(unittest.TestCase):
+    def test_exact_math_prompts_preserve_qualification_and_delivery_basis(self):
+        from dynamic_math_engine import POT_EXTRACTION_SYSTEM_PROMPT
+        from extraction_pipeline import EXTRACTION_SYSTEM_PROMPT
+        for prompt in [POT_EXTRACTION_SYSTEM_PROMPT, EXTRACTION_SYSTEM_PROMPT]:
+            self.assertIn('Qualified disclosures', prompt)
+            self.assertIn('not exact scalars', prompt)
+            self.assertIn('not realized annual removals', prompt)
+            self.assertIn('Missing allocations are not zero', prompt)
+
+
 if __name__ == '__main__':
     unittest.main()

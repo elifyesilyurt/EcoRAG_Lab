@@ -3,7 +3,7 @@ import glob
 import re
 from typing import List, Dict, Any, Optional
 import pdfplumber
-from esg_tables import get_carbon_emissions_df, get_water_metrics_df, get_energy_metrics_df, get_waste_metrics_df, get_waste_prevention_df
+from esg_tables import get_carbon_emissions_df, get_water_metrics_df, get_energy_metrics_df, get_waste_metrics_df, get_waste_prevention_df, get_carbon_removal_df, get_carbon_removal_disclosures_df
 from ingestion_core import table_row_evidence, source_hash, replace_index
 
 DB_PATH = "rag_storage.db"
@@ -370,6 +370,10 @@ def audited_source_chunks(doc_title, digest):
     tables and retain the units after the previously verified conversions.
     """
     source_versions = {
+        "Microsoft_2024_Sustainability_Report.pdf":
+            "7445f2725f6814d2f960bd439dc7bb3ae5ac57670bd10de9b609aa9403b31595",
+        "Microsoft_2025_Sustainability_Report.pdf":
+            "7c20672f907103daa14a0c10c1ed8407f693108ad1869836ae348bc7c397aad9",
         "Microsoft_2026_Environmental_Data_Fact_Sheet.pdf":
             "0fd180837df00b3427c3eae484a492224b8f18c381e82a2aed98b04553a197f6",
         "2026-Microsoft-Environmental-Sustainability-Report-PDF.pdf":
@@ -379,6 +383,18 @@ def audited_source_chunks(doc_title, digest):
         return []
     if digest != source_versions[doc_title]:
         raise ValueError(f"Audited PDF source version changed: {doc_title}")
+    if doc_title in ("Microsoft_2024_Sustainability_Report.pdf", "Microsoft_2025_Sustainability_Report.pdf"):
+        publication, fiscal, page = ("2024", "FY23", 19) if "2024" in doc_title else ("2025", "FY24", 21)
+        frame = get_carbon_removal_df()
+        rows = []
+        for _, row in frame.iterrows():
+            value = "[NOT REPORTED]" if row[fiscal] != row[fiscal] else f"{row[fiscal]:.0f}"
+            content = (f"[SOURCE AUDITED TABLE]\nMetric: {row['Metric']} (mt)\n{fiscal}: {value}\n"
+                       "Basis: contracted multi-year future deliveries; allocations are not realized removals or credits retired in that year.")
+            rows.append({"year": publication, "title": f"{doc_title} (p.{page})",
+                         "content": format_chunk_with_metadata(doc_title, publication, page, content, is_table=True),
+                         "type": "audited_table", "page": page, "source_sha256": digest})
+        return rows
     water = get_water_metrics_df()
     annual = water['Metric'] == "Water Replenishment (million m3)"
     if "Fact_Sheet" in doc_title:
@@ -402,6 +418,14 @@ def audited_source_chunks(doc_title, digest):
                     "[SOURCE AUDITED TABLE]\n" + content + ("\nInventory scope: FY25 includes cloud hardware packaging; prior years were not adjusted. Construction/deconstruction waste is excluded. On-site prevention must not be added to off-site diversion." if page in (7, 8) and "Waste" in content else ""), is_table=True),
                 "type": "audited_table", "page": page, "source_sha256": digest,
             })
+    if doc_title == "2026-Microsoft-Environmental-Sustainability-Report-PDF.pdf":
+        disclosure = get_carbon_removal_disclosures_df().iloc[0]
+        content = (f"[SOURCE AUDITED TABLE]\nMetric: {disclosure['Metric']} (mt)\n"
+                   f"{disclosure['Fiscal_Year']}: {disclosure['Disclosure']}\n"
+                   f"Basis: {disclosure['Measurement_Basis']}. Exact total, technology shares and realized removals are not reported here; do not treat 45 million as an exact scalar.")
+        chunks.append({"year": "2026", "title": f"{doc_title} (p.32)",
+                       "content": format_chunk_with_metadata(doc_title, "2026", 32, content, is_table=True),
+                       "type": "audited_table", "page": 32, "source_sha256": digest})
     return chunks
 
 

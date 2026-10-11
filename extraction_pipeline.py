@@ -23,6 +23,7 @@ Your task is to extract all relevant numerical metrics, physical units, entities
 
 STRICT PROTOCOL:
 1. Extract numerical values with their EXACT bound units (e.g., m3, million m3, projects, metric tons).
+   Qualified disclosures (more than, nearly, approximately) are not exact scalars. Contracted future deliveries are not realized annual removals. Missing allocations are not zero. For an exact calculation without exact inputs, set information_found to false and metrics to [].
 2. Differentiate strictly between counts (e.g., projects, facilities) and physical metrics (e.g., m3, metric tons).
 3. Differentiate strictly between cumulative/lifetime totals and single-year additions.
 4. For NON-NUMERIC facts (e.g., certification names, standard names, program names): set metric_type to "certification" or "standard", set value to 0.0, and put the text in string_value.

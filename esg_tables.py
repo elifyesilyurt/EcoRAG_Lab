@@ -78,66 +78,38 @@ def get_carbon_emissions_df() -> pd.DataFrame:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def get_carbon_removal_df() -> pd.DataFrame:
+    """Contracted future-delivery commitments, not realized annual removals.
+
+    Exact FY23/FY24 values: 2024 p.19 and 2025 p.21 Carbon Table 3.
+    FY25 exact totals/allocations are not reported by the 2026 report.
+    Missing cells are not zero; the FY25 lower-bound disclosure is separate.
     """
-    Yıllık karbon uzaklaştırma sözleşme hacmi ve kullanım kırılımı.
-    In_Year_Neutrality: O yıl için karbon tarafsızlık hedefi kapsamı.
-    Target_2030_Carbon_Negative: 2030 karbon negatif hedefi için ayrılan hacim.
-    Post_2031_and_Historic: 2031 sonrası ve geçmişe dönük (historic) taahhütler.
-    """
-    data = {
-        "Report_Year":               ["2024 Report (p. 19)", "2025 Report (p. 21)"],
-        "Total_Contracted_Volume":   [5_015_019,            21_927_370],
-        "In_Year_Neutrality":        [3_549_242,             1_690_940],
-        "Target_2030_Carbon_Negative":[1_465_777,             2_804_056],
-        "Post_2031_and_Historic":    [0,                    17_432_374],
-    }
-    return pd.DataFrame(data)
+    return pd.DataFrame({
+        "Metric": ["Total Contracted Carbon Removal", "Contracted In-year Neutrality Allocation",
+                   "Contracted FY2030 Carbon Negative Allocation", "Contracted FY2031+ and Historic Allocation"],
+        "Unit": ["mt"] * 4,
+        "FY23": [5015019, 3549242, 1465777, None],
+        "FY24": [21927370, 1690940, 2804056, 17432374],
+        "FY25": [None] * 4,
+    })
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# 3. KARBON UZAKLAŞTIRMA PORTFÖYÜ — TEKNOLOJİ TİPİ KIRILIMLARI
-#    Kaynak: 2025 Report — Stacked Bar Chart (p. 21-22), grafik kaynaklı
-#    Birim : mtCO2e (2025 Raporu toplam sözleşme hacmi üzerinden)
-# ═══════════════════════════════════════════════════════════════════════════════
+def get_carbon_removal_disclosures_df() -> pd.DataFrame:
+    """Qualified FY25 disclosure: 2026 report pp.32–33; not an exact scalar."""
+    return pd.DataFrame({
+        "Fiscal_Year": ["FY25"], "Metric": ["Total Contracted Carbon Removal"],
+        "Disclosure": ["More than 45 million metric tons"],
+        "Measurement_Basis": ["Contracted future deliveries over the next three decades; not realized FY25 removal"],
+        "Source": ["2026 Environmental Sustainability Report, pp.32–33"],
+    })
+
 
 def get_carbon_removal_by_type_df() -> pd.DataFrame:
-    """
-    Karbon uzaklaştırma portföyünün teknoloji tipi bazında kırılımı.
-    2025 Raporu stacked bar chart verilerinden türetilmiştir (p. 21-22).
-    Birim: mtCO2e (2025 toplam: ~21.9M)
-    """
-    data = {
-        "Removal_Type": [
-            "Forests & Land-based (Nature)",
-            "Direct Air Capture (DAC)",
-            "Biomass / BECCS",
-            "Enhanced Weathering & Mineralization",
-            "Ocean-based & Other",
-        ],
-        "FY24_Volume": [
-            2_100_000,
-            950_000,
-            1_200_000,
-            480_000,
-            285_019,
-        ],
-        "FY25_Volume": [
-            8_540_000,
-            4_210_000,
-            5_130_000,
-            2_347_370,
-            1_700_000,
-        ],
-        "FY25_Share_Pct": [38.9, 19.2, 23.4, 10.7, 7.8],
-    }
-    return pd.DataFrame(data)
+    """Unavailable audited technology-volume shares; do not infer from totals."""
+    frame = pd.DataFrame(columns=["Removal_Type", "FY23_Volume", "FY24_Volume", "FY25_Volume", "FY25_Share_Pct"])
+    frame.attrs["unavailable_reason"] = "Technology volumes and percentages have not been source-audited."
+    return frame
 
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# 4. SU METRİKLERİ — ÖZET (Water Summary & Replenishment)
-#    Kaynak: 2026 Data Fact Sheet p.7 Table 8 & 2026 Report p.25
-#    Birim : million m3 (milyon metreküp)
-# ═══════════════════════════════════════════════════════════════════════════════
 
 def get_water_metrics_df() -> pd.DataFrame:
     """2026 restated inventory; ML / 1000 and m3 / 1,000,000 -> million m3.

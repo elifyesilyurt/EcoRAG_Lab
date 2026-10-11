@@ -21,7 +21,7 @@ replaced with direct imports when the query engine is separated from the UI.
 
 ## Current status after stage 8
 
-114 tests: **114 pass, no expected failures**. FY24 display, partial math execution,
+120 tests: **120 pass, no expected failures**. FY24 display, partial math execution,
 and water calculator routing regressions are fixed. See
 `MATH_EXECUTION_RELIABILITY.md` and `QUERY_ROUTING_RELIABILITY.md` for execution
 and routing contracts. Xbox environmental questions now pass the domain gate;

@@ -305,9 +305,9 @@ class TestAuditedSources(unittest.TestCase):
         fact_chunks = ingestion.audited_source_chunks(FACT_SHEET, fixture['source_pdf_sha256'])
         annual_chunks = ingestion.audited_source_chunks(REPORT, fixture['annual_replenishment_source']['sha256'])
         self.assertEqual({chunk['page'] for chunk in fact_chunks}, {3, 6, 7, 8})
-        self.assertEqual({chunk['page'] for chunk in annual_chunks}, {25})
+        self.assertEqual({chunk['page'] for chunk in annual_chunks}, {25, 32})
         self.assertTrue(all('Water Replenishment' not in chunk['content'] for chunk in fact_chunks))
-        self.assertTrue(all('Water Replenishment' in chunk['content'] for chunk in annual_chunks))
+        self.assertTrue(all('Water Replenishment' in chunk['content'] for chunk in annual_chunks if chunk['page'] == 25))
         self.assertTrue(all(numeric_evidence_allowed(chunk['content']) for chunk in fact_chunks + annual_chunks))
 
     def test_committed_index_matches_current_audited_rows_and_source_manifest(self):

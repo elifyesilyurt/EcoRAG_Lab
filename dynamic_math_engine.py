@@ -208,6 +208,7 @@ Your task is to extract exact numbers from the provided report context and outpu
 
 STRICT PROTOCOL:
 1. Extract exact numbers directly from the report text or tables. Do not alter any numbers.
+   Qualified disclosures (more than, nearly, approximately) are not exact scalars. Do not use them for exact totals or growth rates. Contracted future deliveries are not realized annual removals. Missing allocations are not zero. If exact inputs are unavailable, output no arithmetic result.
 2. DO NOT calculate any results in your head. Write Python variable assignments and arithmetic formulas instead.
 3. When summing multiple listed items/categories, explicitly put all extracted values into a Python list and use sum():
    e.g.: others = [3.39, 1.99, 0.05, 0.81, 1.22, 0.45, 14.05, 0.03, 0.05]

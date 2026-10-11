@@ -164,7 +164,7 @@ def prioritize_audited_evidence(scores, query, minimum_score=0):
                'tuketim': 'consumption', 'yenileme': 'replenishment',
                'enerji': 'energy', 'elektrik': 'electricity', 'emisyon': 'emissions',
                'emission': 'emissions', 'kategori': 'cat', 'category': 'cat',
-               'atik': 'waste', 'atık': 'waste', 'yonlendir': 'diverted', 'bertaraf': 'disposal',
+               'atik': 'waste', 'atık': 'waste', 'karbon': 'carbon', 'giderim': 'removal', 'uzaklast': 'removal', 'sozlesme': 'contracted', 'yonlendir': 'diverted', 'bertaraf': 'disposal',
                'uretil': 'generated', 'onlen': 'prevented', 'operasyonel': 'operational'}
     def tokens(text):
         normalized = ''.join(char for char in unicodedata.normalize('NFD', text.lower())

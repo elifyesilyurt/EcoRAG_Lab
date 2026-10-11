@@ -14,6 +14,7 @@ from sentence_transformers import SentenceTransformer
 from esg_tables import (
     get_carbon_emissions_df,
     get_carbon_removal_df,
+    get_carbon_removal_disclosures_df,
     get_carbon_removal_by_type_df,
     get_water_metrics_df,
     get_water_replenishment_projects_df,
@@ -591,52 +592,21 @@ def compute_carbon_commitments_summary(lang: str = "tr") -> str:
     return "\n".join(lines)
 
 def compute_carbon_removal_summary(lang: str = "tr") -> str:
-    if lang == "tr":
-        return """Microsoft'un 2025 raporundaki Karbon Tablosu 3'e göre sözleşmeye bağlanan toplam karbon uzaklaştırma hacmi **21,927,370 mtCO2e** seviyesine ulaşmıştır. Bu hacim, 2024 raporundaki 5,015,019 tona kıyasla **4.37 kat artış** anlamına gelmektedir. Portföyde en büyük paya sahip ilk iki teknoloji grubu **Orman/Doğa tabanlı (~8.54M mtCO2e, %38.9)** ve **Biyokütle/BECCS (~5.13M mtCO2e, %23.4)** çözümleridir.
-
-### 🔬 Teknoloji Türlerine Göre Karbon Uzaklaştırma Portföyü (2025 Raporu, Tablo 3)
-
-| Teknoloji Grubu | Ana Metot & Proje Türü | Sözleşmeli Hacim (mtCO2e) | Portföy Payı | Kalıcılık / Dayanıklılık |
-| :--- | :--- | :---: | :---: | :---: |
-| 🌲 **Orman ve Doğa Tabanlı Projeler** | Ağaçlandırma, Yeniden Ormanlaştırma & Toprak | `8,540,000 mtCO2e` | **%38.9** | Orta Vade (~100 yıl) |
-| 🌾 **Biyokütle / BECCS** | Biyoenerji ile Karbon Yakalama & Biyokömür | `5,130,000 mtCO2e` | **%23.4** | Yüksek Vade |
-| 🏭 **Doğrudan Havadan Yakalama (DAC)** | Mühendislik tabanlı atmosferik hava yakalama | `4,210,000 mtCO2e` | **%19.2** | Çok Yüksek (1000+ yıl) |
-| 🪨 **İleri Kayaç Ayrışması & Mineralizasyon** | Bazalt aşındırma & mineral karbon tutumu | `2,347,370 mtCO2e` | **%10.7** | Çok Yüksek (1000+ yıl) |
-| 🌊 **Okyanus Tabanlı ve Diğer Teknolojiler** | Denizel alkalinite artırma & yeni teknolojiler | `1,700,000 mtCO2e` | **%7.8** | Yüksek Vade |
-| 🎯 **Toplam Sözleşmeli Karbon Uzaklaştırma** | **Tüm Teknoloji Grupları Kümülatif (FY25)** | **`21,927,370 mtCO2e`** | **%100.0** | **4.37 Kat Artış** |
-
-### ⏱️ Teslimat Zaman Çizelgesi Dağılımı
-| Zaman Dilimi / Hedef Kapsamı | Hacim (mtCO2e) | Açıklama & Amaç |
-| :--- | :---: | :--- |
-| **Yıllık Nötrlük (In-Year Neutrality)** | `1,690,940 mtCO2e` | İlgili raporlama yılındaki emisyonların dengelenmesi |
-| **2030 Karbon Negatif Hedefi Kapsamı** | `2,804,056 mtCO2e` | 2030 net-negatif eşiğine doğrudan tahsis |
-| **2031 Sonrası ve Geçmiş Taahhütler** | `17,432,374 mtCO2e` | 2050 tarihsel telafi ve uzun vadeli teslimatlar |
-
-### 💡 Stratejik Aksiyon
-* **Piyasa Katalizörü:** Kalıcı CDR teknolojilerinin ticarileşmesini hızlandırmak amacıyla Direct Air Capture ve mineralizasyon çözümlerine doğrudan sermaye ve çok yıllı alım taahhütleri verilmektedir."""
-    else:
-        return """According to Carbon Table 3 in the 2025 report, Microsoft contracted **21,927,370 mtCO2e** in carbon removal—a **4.37x growth** over 5,015,019 tons reported in 2024. The top two technology categories are **Nature-based (~8.54M mtCO2e, 38.9%)** and **Biomass/BECCS (~5.13M mtCO2e, 23.4%)**.
-
-### 🔬 Portfolio Breakdown by Technology Type (2025 Report, Table 3)
-
-| Technology Group | Project Type & Method | Contracted Volume (mtCO2e) | Portfolio Share | Durability Horizon |
-| :--- | :--- | :---: | :---: | :---: |
-| 🌲 **Forests & Land-based Nature** | Reforestation, afforestation, soil carbon | `8,540,000 mtCO2e` | **38.9%** | Medium (~100 yrs) |
-| 🌾 **Biomass / BECCS** | Bioenergy with carbon capture & biochar | `5,130,000 mtCO2e` | **23.4%** | High |
-| 🏭 **Direct Air Capture (DAC)** | Engineered atmospheric CO2 capture & storage | `4,210,000 mtCO2e` | **19.2%** | Very High (1000+ yrs) |
-| 🪨 **Enhanced Weathering & Mineralization** | Basalt spreading & permanent mineralization | `2,347,370 mtCO2e` | **10.7%** | Very High (1000+ yrs) |
-| 🌊 **Ocean-based & Novel Solutions** | Ocean alkalinity enhancement & marine CDR | `1,700,000 mtCO2e` | **7.8%** | High |
-| 🎯 **Total Contracted Removal Volume** | **All Technology Categories Cumulative** | **`21,927,370 mtCO2e`** | **100.0%** | **4.37x Multiplier** |
-
-### ⏱️ Delivery Timeline & Commitment Horizon
-| Timeline Horizon | Volume (mtCO2e) | Strategic Allocation |
-| :--- | :---: | :--- |
-| **In-Year Neutrality** | `1,690,940 mtCO2e` | Counterbalancing reported fiscal year operational emissions |
-| **2030 Carbon Negative Target Volume** | `2,804,056 mtCO2e` | Dedicated to achieving net-negative operational status by 2030 |
-| **Post-2031 & Historical Commitments** | `17,432,374 mtCO2e` | Multi-decade contracted deliveries for 2050 historical compensation |
-
-### 💡 Strategic Action
-* **Advance Market Commitments:** Catalysing the market for novel, highly durable Direct Air Capture and mineral carbonation solutions."""
+    frame = get_carbon_removal_df()
+    disclosure = get_carbon_removal_disclosures_df().iloc[0]
+    lines = ["Sözleşmeli karbon giderimi — metrik ton (mt)" if lang == "tr" else "Contracted carbon removal — metric tons (mt)",
+             "| Metric | FY23 | FY24 | FY25 (exact) |", "|---|---:|---:|---:|"]
+    for _, row in frame.iterrows():
+        values = ["—" if pd.isna(row[year]) else f"{row[year]:,.0f}" for year in ["FY23", "FY24", "FY25"]]
+        lines.append("| " + row["Metric"] + " | " + " | ".join(values) + " |")
+    lines.append(f"{disclosure['Fiscal_Year']}: {disclosure['Disclosure']}. {disclosure['Measurement_Basis']}.")
+    lines.append(("Sözleşmeli hacimler aynı yıl gerçekleşen veya teslim edilen giderim değildir. FY25 için tam sayı verilmediğinden kesin büyüme oranı hesaplanamaz. — sıfır değil, raporlanmayan değerdir. Teknoloji payları doğrulanmamıştır."
+                  if lang == "tr" else
+                  "Contracted volumes are not removals realized or delivered in the same year. An exact FY25 growth rate cannot be calculated from this qualified disclosure. — means unreported, not zero. Technology shares are unverified."))
+    lines.append("Sources: [2024 report, Carbon Table 3, p.19](https://aka.ms/SustainabilityReport2024); "
+                 "[2025 report, Carbon Table 3, p.21](https://aka.ms/SustainabilityReport2025); "
+                 "[2026 report, pp.32–33](https://aka.ms/SustainabilityReport2026).")
+    return "\n\n".join(lines)
 
 def compute_waste_dashboard_metrics(lang: str = "tr") -> dict:
     frame = get_waste_metrics_df().set_index("Metric")
@@ -886,7 +856,7 @@ def get_esg_impact_insight(query: str, answer: str, lang: str = "tr"):
                 "pillar": "🌍 Karbon & İklim (Scope 1, 2, 3 & Karbon Uzaklaştırma)",
                 "target": "2030 Karbon Negatif & 2050 Tarihsel Emisyonları Telafi Etme",
                 "actions": (
-                    "• **21.9M mtCO2e Karbon Uzaklaştırma:** Doğrudan Havadan Yakalama (DAC) ve biyo-kütle dahil dünyanın en büyük kalıcı CDR anlaşması sağlandı.\n\n"
+                    "• **Karbon giderimi dönemleri:** 2025 raporundaki 21,927,370 mt sözleşmeli hacim FY24’e aittir. FY25 için 2026 raporu 45 milyon metrik tonun üzerinde gelecekteki teslimat taahhüdü bildirir; bunlar gerçekleşen yıllık giderim değildir.\n\n"
                     "• **Tedarikçi Temiz Enerji Şartı:** Değer zincirindeki (Scope 3) emisyon artışını dizginlemek için büyük tedarikçilere %100 karbonsuz elektrik kullanma zorunluluğu getirildi.\n\n"
                     "• **34 GW Temiz Enerji Portföyü:** Veri merkezi büyümesinin elektrik ihtiyacını sıfır karbonlu enerjiyle karşılamak için küresel PPA anlaşmaları rekor seviyede genişletildi."
                 )
@@ -897,7 +867,7 @@ def get_esg_impact_insight(query: str, answer: str, lang: str = "tr"):
                 "pillar": "🌍 Carbon & Climate (Scope 1, 2, 3 & Carbon Removal)",
                 "target": "2030 Carbon Negative & 2050 Historical Abatement",
                 "actions": (
-                    "• **21.9M mtCO2e Contracted CDR Portfolio:** As of 2025 report, contracted the world's largest corporate durable carbon removal portfolio including DAC and BECCS.\n\n"
+                    "• **Carbon removal periods:** The 2025 report discloses 21,927,370 mt contracted in FY24. For FY25, the 2026 report discloses more than 45 million metric tons in future delivery commitments; these are not realized annual removals.\n\n"
                     "• **Supply Chain Clean Energy Mandate:** Enforced 100% carbon-free electricity requirements for major Scope 3 suppliers to curb infrastructure growth emissions.\n\n"
                     "• **34+ GW Clean Electricity PPAs:** Expanded contracted clean electricity to match expanding AI datacenter energy demand."
                 )
@@ -1002,7 +972,7 @@ TEXTS = {
         "dash_t1": "1. Sera Gazı Emisyon Dağılımı (Scope 1, 2, 3)",
         "dash_t1_cap": "Birim: mtCO2e (Metrik ton CO2 eşdeğeri) • Kaynak: 2025 Report Appendix Table 1",
         "dash_t2": "2. Karbon Uzaklaştırma Portföyü",
-        "dash_t2_cap": "Birim: mtCO2e • Kaynak: 2025 Report p.21-22",
+        "dash_t2_cap": "Sözleşmeli hacim (mt): FY23/FY24 • 2024 s.19 / 2025 s.21; FY25 nitelikli açıklama: 2026 s.32–33",
         "dash_t3": "3. Su Bilançosu & Yıllık Yenileme",
         "dash_t3_cap": "Birim: milyon m³ • 2026 Veri Föyü Tablo 8 & Rapor s.25",
         "dash_t4": "4. Sıfır Atık & UL Solutions Sertifikasyonları",
@@ -1056,7 +1026,7 @@ TEXTS = {
         "dash_t1": "1. Greenhouse Gas Emissions (Scope 1, 2, 3)",
         "dash_t1_cap": "Unit: mtCO2e (Metric tons CO2 equivalent) • Source: 2025 Report Appendix Table 1",
         "dash_t2": "2. Carbon Removal Portfolio Breakdown",
-        "dash_t2_cap": "Unit: mtCO2e • Source: 2025 Report p.21-22",
+        "dash_t2_cap": "Contracted volume (mt): FY23/FY24 • 2024 p.19 / 2025 p.21; qualified FY25 disclosure: 2026 pp.32–33",
         "dash_t3": "3. Water Inventory & Annual Replenishment",
         "dash_t3_cap": "Unit: million m³ • 2026 Data Fact Sheet Table 8 & Report p.25",
         "dash_t4": "4. Zero Waste & UL Solutions Certifications",
@@ -3171,7 +3141,12 @@ with tab_dashboard:
             st.markdown(f"#### :material/filter_drama: **{T['dash_t2']}**")
             st.caption(T["dash_t2_cap"])
             cr_type_df = get_carbon_removal_by_type_df()
-            st.dataframe(cr_type_df, width="stretch", hide_index=True)
+            if cr_type_df.empty:
+                st.info(cr_type_df.attrs["unavailable_reason"])
+            else:
+                st.dataframe(cr_type_df, width="stretch", hide_index=True)
+            st.dataframe(get_carbon_removal_df(), width="stretch", hide_index=True)
+            st.dataframe(get_carbon_removal_disclosures_df(), width="stretch", hide_index=True)
 
     with col_right:
         with st.container(border=True):
