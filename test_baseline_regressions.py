@@ -33,7 +33,8 @@ def load_app_functions(names, dependencies):
     if any(node.decorator_list for node in functions):
         raise RuntimeError("Extracted functions must not execute decorators")
     namespace = dict(dependencies)
-    exec(compile(ast.Module(body=functions, type_ignores=[]), "app.py", "exec"), namespace)
+    # Only repository function definitions are executed, never model/user input.
+    exec(compile(ast.Module(body=functions, type_ignores=[]), "app.py", "exec"), namespace)  # noqa: S102
     return namespace
 
 
