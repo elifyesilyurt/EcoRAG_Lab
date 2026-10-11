@@ -137,7 +137,6 @@ class TestKnownRegressions(unittest.TestCase):
         query = "FY25 su çekimi ile tüketimi arasındaki fark kaç metreküptür?"
         self.assertEqual(APP["classify_esg_intent"](query), "mathematical_query")
 
-    @known_defect
     def test_sustainable_xbox_packaging_is_in_domain(self):
         self.assertTrue(APP["is_esg_query"]("Explain sustainable Xbox packaging"))
 

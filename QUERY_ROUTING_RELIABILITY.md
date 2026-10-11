@@ -1,4 +1,4 @@
-# Query routing reliability — stage 5
+# Query routing reliability — stages 5–6
 
 ## Problem, cause, and correction
 
@@ -22,8 +22,14 @@ Empty/null mathematical queries are handled safely.
 
 Short domain tokens (`su`, `ul`, `rec`, `cop`) now match whole words. Previously
 `ul` inside `calculate` and `su` inside `sum` could falsely accept unrelated
-arithmetic as an ESG question. Other domain rules were retained for the next
-coverage stage; Xbox sustainability still has a tracked rejection bug.
+arithmetic as an ESG question.
+
+Stage 6 removes Xbox from the blanket blacklist. Xbox questions require an
+explicit environmental topic (TR/EN packaging, recycling, sustainability,
+energy or emissions); generic year/report/target/cloud keywords are insufficient.
+Explicit financial, gaming-title and CPU/ping exclusions still run first.
+This only admits retrieval or calculation: it does not certify that a requested
+Xbox fact exists in the corpus.
 
 The actual domain/classifier functions moved to `query_routing.py`, imported
 by the app and directly by tests. This removes UI initialization from routing
@@ -49,11 +55,12 @@ its previous generic carbon summary.
 python -m unittest test_dynamic_math test_baseline_regressions test_resource_metrics test_math_response test_query_routing -v
 ```
 
-50 tests: **49 pass, 1 expected failure**. The first five routing tests were
+54 tests: **54 pass, no expected failures**. The first five routing tests were
 run against the prior router and exposed 14 failed assertions plus the null
 query error. The final independent routing fixture covers 28 TR/EN questions
 across math, narratives, domain rejection and topic goals. Additional checks
-cover short domain tokens and the app's actual shared-classifier import/use.
+cover short domain tokens, Xbox environmental/gaming cases in TR/EN, explicit
+exclusions, preserved topic/math routing, and the app's shared-classifier import/use.
 The original water-route regression is now an ordinary passing test. CI runs
 all five offline modules on every push and PR.
 
@@ -65,4 +72,4 @@ classifier remains heuristic and ambiguous questions need broader independent
 evaluation. Specific-year lookups and narrative target questions can still
 reach fixed FY25 summaries; requested-year handling and source-grounded answer
 selection remain pending. Unverified legacy benchmark scores are not used as
-validation. The one remaining tracked regression is Xbox domain rejection.
+validation. The original Xbox regression is now a normal passing test.

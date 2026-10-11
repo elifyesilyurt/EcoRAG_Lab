@@ -19,12 +19,13 @@ dependencies. They do not copy the router rules
 into a separate implementation. This temporary extraction approach will be
 replaced with direct imports when the query engine is separated from the UI.
 
-## Current status after stage 5
+## Current status after stage 6
 
-50 tests: **49 pass, 1 expected failure**. FY24 display, partial math execution,
+54 tests: **54 pass, no expected failures**. FY24 display, partial math execution,
 and water calculator routing regressions are fixed. See
 `MATH_EXECUTION_RELIABILITY.md` and `QUERY_ROUTING_RELIABILITY.md` for execution
-and routing contracts. The remaining tracked regression is Xbox domain rejection.
+and routing contracts. Xbox environmental questions now pass the domain gate;
+generic gaming and explicit exclusions remain rejected.
 See `CARBON_DATA_VERIFICATION.md` for the carbon audit and
 `RESOURCE_DATA_VERIFICATION.md` for water/energy source checks and units.
 Waste, requested-year answer handling, retrieval and real model integration remain unverified.

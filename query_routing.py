@@ -15,13 +15,26 @@ def is_esg_query(query: str) -> bool:
         "ne zaman kuruldu", "kurucusu kim", "kuruculari", "kim kurdu", "hisse fiyati", 
         "hisse senedi", "borsa degeri", "piyasa degeri", "gelir tablosu", "net kar",
         "ceo kim", "satadya", "satya nadella", "bill gates", "paul allen",
-        "windows 11", "windows 10", "xbox", "office 365", "playstation", "fifa",
+        "windows 11", "windows 10", "office 365", "playstation", "fifa",
         "cpu saat", "saat hizi", "ghz", "onbellek", "gecikme suresi", "ping", "latency",
         "when was microsoft founded", "who founded microsoft", "stock price", "market cap",
         "who is the ceo", "quarterly revenue", "net profit", "operating income"
     ]
     if any(p in q for p in out_of_domain_patterns):
         return False
+
+    # Xbox is covered by sustainability reports. Require an environmental
+    # topic, rather than letting generic year/report/target words admit gaming.
+    if re.search(r"\bxbox\b", q):
+        environmental_topic = re.search(
+            r"\b(?:sustainab\w*|surdurulebil\w*|sürdürülebil\w*|"
+            r"environment\w*|çevre\w*|cevre\w*|esg|"
+            r"carbon\w*|karbon\w*|emission\w*|emisyon\w*|"
+            r"energy|enerji\w*|electricity|elektrik\w*|kwh|"
+            r"packaging|ambalaj\w*|plastic\w*|plastik\w*|"
+            r"recycl\w*|geri dönüş\w*|geri donus\w*|waste|atık\w*|atik\w*)\b", q
+        )
+        return bool(environmental_topic)
 
     esg_keywords = {
         "karbon", "carbon", "emisyon", "emission", "emissions", "ghg", "sera", "gazi", "gazı",
@@ -50,8 +63,7 @@ def classify_esg_intent(query: str) -> str:
     """Apply domain rejection, numeric intent, then topic-specific narratives.
 
     Keyword routing is a temporary heuristic. Numeric intent must not be
-    shadowed by water/energy/carbon/packaging summary keywords. Domain filtering
-    remains unchanged for the separate domain-coverage stage.
+    shadowed by water/energy/carbon/packaging summary keywords.
     """
     if not query:
         return "out_of_domain"

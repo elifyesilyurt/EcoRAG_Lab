@@ -51,6 +51,39 @@ class TestShortDomainSignals(unittest.TestCase):
                 self.assertTrue(is_esg_query(query))
 
 
+class TestXboxDomainCoverage(unittest.TestCase):
+    def test_environmental_product_questions_are_in_domain(self):
+        for query in ('Explain sustainable Xbox packaging', 'Describe Xbox energy saving features',
+                      'Xbox ambalajında geri dönüşüm nasıl sağlanıyor?',
+                      'Xbox sürdürülebilirlik yaklaşımı nedir?', 'XBOX karbon emisyonlarını açıkla'):
+            with self.subTest(query=query):
+                self.assertTrue(is_esg_query(query))
+
+    def test_gaming_questions_with_generic_domain_words_are_rejected(self):
+        for query in ('What are the best Xbox games?', 'Xbox 2026 release report',
+                      'Xbox cloud gaming targets for 2025', 'Xbox raporu 2026',
+                      'Xbox oyun hedefleri nedir?', 'What is the Xbox price?', 'Explain Xbox'):
+            with self.subTest(query=query):
+                self.assertEqual(classify_esg_intent(query), 'out_of_domain')
+
+    def test_explicit_exclusions_still_apply_to_environmental_wording(self):
+        for query in ('Calculate Xbox stock price for sustainable packaging',
+                      'Explain Xbox energy settings and CPU GHz', 'Xbox enerji tüketimi ve ping'):
+            with self.subTest(query=query):
+                self.assertEqual(classify_esg_intent(query), 'out_of_domain')
+
+    def test_environmental_questions_keep_their_topic_and_math_routes(self):
+        cases = (
+            ('Explain the 2026 Xbox single-use plastic packaging reduction strategy', 'packaging_plastic'),
+            ('Explain sustainable Xbox packaging', 'general_rag'),
+            ('Calculate the Xbox energy consumption difference between FY24 and FY25', 'mathematical_query'),
+            ('Xbox FY24 ve FY25 enerji tüketimi farkını hesapla', 'mathematical_query'),
+        )
+        for query, intent in cases:
+            with self.subTest(query=query):
+                self.assertEqual(classify_esg_intent(query), intent)
+
+
 class TestAppRouterWiring(unittest.TestCase):
     def test_app_uses_shared_classifier(self):
         tree = ast.parse(Path(__file__).with_name('app.py').read_text())
