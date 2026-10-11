@@ -1,0 +1,8 @@
+[
+  {"id": "carbon_trend_en", "question": "Compare Scope 1 and Scope 3 emissions between FY20 and FY25", "language": "en", "current_intent": "carbon_trend_scope"},
+  {"id": "carbon_removal_tr", "question": "2025 raporundaki karbon uzaklaştırma portföyü nedir?", "language": "tr", "current_intent": "carbon_removal"},
+  {"id": "domain_rejection_en", "question": "What is Microsoft's stock price?", "language": "en", "current_intent": "out_of_domain"},
+  {"id": "domain_rejection_tr", "question": "Microsoft'un kurucusu kim?", "language": "tr", "current_intent": "out_of_domain"},
+  {"id": "general_rag_en", "question": "Describe biodiversity projects in Amsterdam", "language": "en", "current_intent": "general_rag"},
+  {"id": "dynamic_math_en", "question": "What is the difference between regional electricity usage in MWh?", "language": "en", "current_intent": "mathematical_query"}
+]

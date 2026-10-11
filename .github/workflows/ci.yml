@@ -2,9 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
   pull_request:
-    branches: [ main ]
 
 jobs:
   test:
@@ -22,12 +20,12 @@ jobs:
       - name: Install test dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pytest ruff
+          pip install -r requirements-test.txt
 
       - name: Code style and lint check (Ruff)
         run: |
-          ruff check --line-length=120 --ignore E501,BLE001,TRY004,UP,B017,I001 dynamic_math_engine.py test_dynamic_math.py
+          ruff check --line-length=120 --ignore E501,BLE001,TRY004,UP,B017,I001 dynamic_math_engine.py test_dynamic_math.py test_baseline_regressions.py
 
-      - name: Run unit tests (Pytest)
+      - name: Run offline baseline and regression tests
         run: |
-          pytest test_dynamic_math.py -v
+          python -m unittest test_dynamic_math test_baseline_regressions -v
