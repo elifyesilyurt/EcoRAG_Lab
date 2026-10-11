@@ -30,7 +30,9 @@ from extraction_pipeline import (
 from dynamic_math_engine import (
     DynamicMathExecutor,
     POT_EXTRACTION_SYSTEM_PROMPT,
-    is_mathematical_query
+    is_mathematical_query,
+    format_math_execution_result,
+    math_execution_failure_message,
 )
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -507,6 +509,25 @@ def translate_query_to_en(query_tr: str) -> str:
     except Exception:
         pass
     return query_tr
+
+def build_math_answer_response(math_res: dict, query: str, lang: str, factual_prompt: str):
+    """Synthesize completed arithmetic only; failed runs return a static message."""
+    calc_details = format_math_execution_result(math_res)
+    if calc_details is None:
+        return None, stream_static_text(math_execution_failure_message(lang))
+    if lang == "tr":
+        prompt = (
+            f"Python ile hesaplanan sayısal sonuçlar:\n{calc_details}\n\nSoru: {query}\n\n"
+            "Son sonucu ilk cümlede açıkla. Verilen sayıları değiştirme veya yeni hesaplama yapma. "
+            "Kaynakta bulunmayan birimleri ve stratejik çıkarımları ekleme."
+        )
+    else:
+        prompt = (
+            f"Numerical results calculated by Python:\n{calc_details}\n\nQuestion: {query}\n\n"
+            "State the final result in the first sentence. Do not alter the numbers or perform new calculations. "
+            "Do not invent units or strategic conclusions unsupported by the source."
+        )
+    return calc_details, query_foundry_stream(factual_prompt, prompt)
 
 def stream_static_text(text: str):
     words = text.split(" ")
@@ -3097,33 +3118,9 @@ with tab_chat:
                             code_raw = query_foundry(POT_EXTRACTION_SYSTEM_PROMPT, pot_prompt, temperature=0.0)
                             math_res = DynamicMathExecutor.execute_code_lines(code_raw)
 
-                            if math_res["success"] and math_res["environment"]:
-                                print("  -> Python ALU Hesaplamayı Tamamladı", flush=True)
-                                env = math_res["environment"]
-                                calc_lines = [
-                                    f"• {k}: {v:.2f}" if isinstance(v, float) else f"• {k}: {v}"
-                                    for k, v in env.items() if not k.startswith("_")
-                                ]
-                                calc_details = "Doğrulanmış Python Matematik Sonuçları:\n" + "\n".join(calc_lines)
-
-                                synth_prompt = (
-                                    f"Doğrulanmış Kesin Matematik Verileri (Python ALU):\n{calc_details}\n\n"
-                                    f"Soru: {query_to_run}\n\n"
-                                    "Yapay başlıklar (Doğrudan Yanıt: vb.) KULLANMADAN hesaplanmış kesin sonucu İLK CÜMLEDE doğrudan ve akıcı bir şekilde açıkla. "
-                                    "Ardından verileri ve hesaplamayı temiz bir Markdown tablosu ile sun ve 1-2 kısa stratejik madde ekle."
-                                    if target_lang == "tr" else
-                                    f"Verified Exact Mathematical Results (Python ALU):\n{calc_details}\n\n"
-                                    f"Question: {query_to_run}\n\n"
-                                    "DO NOT use artificial headers (like 'Direct Answer:'). State the exact calculated result directly in the first sentence. "
-                                    "Then format the metrics into a clear Markdown table and conclude with 1-2 concise bullet points."
-                                )
-                                stream_gen = query_foundry_stream(f_prompt, synth_prompt)
-                            else:
-                                print("  -> PoT Kodu Çıkarılamadı, Standart RAG'e Geçiliyor", flush=True)
-                                stream_gen = query_foundry_stream(
-                                    s_prompt,
-                                    f"Context:\n{context_str}\n\nQuestion: {query_to_run}"
-                                )
+                            calc_details, stream_gen = build_math_answer_response(
+                                math_res, query_to_run, target_lang, f_prompt
+                            )
                     else:
                         if not is_esg_query(query_to_run):
                             print("  [2/3] Alan Dışı Soru: Güvenli Reddetme Devrede", flush=True)

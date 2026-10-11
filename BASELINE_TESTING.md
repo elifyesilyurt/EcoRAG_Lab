@@ -7,7 +7,7 @@ Baseline source: `2413b4d5011c74ddfb2e773b6f643fc4cd3dd140`
 
 ```bash
 python -m pip install -r requirements-test.txt
-python -m unittest test_dynamic_math test_baseline_regressions test_resource_metrics -v
+python -m unittest test_dynamic_math test_baseline_regressions test_resource_metrics test_math_response -v
 ```
 
 PowerShell uses the same install and test commands.
@@ -18,9 +18,11 @@ with their actual math and table dependencies. They do not copy the router rules
 into a separate implementation. This temporary extraction approach will be
 replaced with direct imports when the query engine is separated from the UI.
 
-## Current status after stage 3
+## Current status after stage 4
 
-28 tests: **25 pass, 3 expected failures**. FY24 display regressions are fixed.
+42 tests: **40 pass, 2 expected failures**. FY24 display and partial math
+execution regressions are fixed. See `MATH_EXECUTION_RELIABILITY.md` for the
+fail-closed execution and app response contract.
 See `CARBON_DATA_VERIFICATION.md` for the 51-value carbon audit and
 `RESOURCE_DATA_VERIFICATION.md` for water/energy source checks and units.
 Waste, retrieval and model integration remain unverified.

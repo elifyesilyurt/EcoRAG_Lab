@@ -129,7 +129,6 @@ class TestSourceVerifiedCarbon(unittest.TestCase):
 
 
 class TestKnownRegressions(unittest.TestCase):
-    @known_defect
     def test_failed_final_calculation_must_not_succeed(self):
         result = DynamicMathExecutor.execute_code_lines("a = 10\nresult = a / 0")
         self.assertFalse(result["success"], "A successful input assignment is not a successful calculation")

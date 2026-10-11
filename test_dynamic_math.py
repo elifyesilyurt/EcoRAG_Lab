@@ -6,7 +6,9 @@ import unittest
 from dynamic_math_engine import (
     SafeMathEvaluator,
     DynamicMathExecutor,
-    is_mathematical_query
+    is_mathematical_query,
+    format_math_execution_result,
+    math_execution_failure_message,
 )
 
 class TestDynamicMathEngine(unittest.TestCase):
@@ -68,6 +70,101 @@ class TestDynamicMathEngine(unittest.TestCase):
         ]
         for q in non_math:
             self.assertFalse(is_mathematical_query(q), f"Yanlış matematik sinyali: {q}")
+
+
+class TestMathExecutionReliability(unittest.TestCase):
+    def test_error_stops_execution_and_discards_partial_values(self):
+        programs = [
+            ("a = 10\nresult = a / 0", 2),
+            ("a = missing + 1\nresult = 12", 1),
+            ("a = 10\nb = a / 0\nresult = 99", 2),
+        ]
+        for code, line in programs:
+            with self.subTest(code=code):
+                result = DynamicMathExecutor.execute_code_lines(code)
+                self.assertFalse(result['success'])
+                self.assertEqual(result['environment'], {})
+                self.assertIsNone(result['result'])
+                self.assertEqual(result['errors'][0]['line'], line)
+                self.assertNotIn('result = 99', result['trace'])
+
+    def test_unsupported_statements_are_not_silently_ignored(self):
+        for statement in ['a[0] = 4', 'a = b = 4', 'import os', 'a += 1',
+                          'a == 10', 'The final answer is 10', 'print(a)']:
+            with self.subTest(statement=statement):
+                result = DynamicMathExecutor.execute_code_lines('a = 10\n' + statement)
+                self.assertFalse(result['success'])
+                self.assertEqual(result['environment'], {})
+
+    def test_final_result_must_be_finite_numeric_scalar(self):
+        for expression in ["True", "'ten'", 'sum', '[1, 2]', '1e309', '(-1) ** 0.5']:
+            with self.subTest(expression=expression):
+                result = DynamicMathExecutor.execute_code_lines('a = 10\nresult = ' + expression)
+                self.assertFalse(result['success'])
+                self.assertEqual(result['environment'], {})
+
+    def test_non_numeric_inputs_are_rejected(self):
+        for code in ["a = True\nresult = a + 1", "a = '10'\nresult = int(a)",
+                     "a = [1, True]\nresult = sum(a)", "a = 1e309\nresult = 10"]:
+            with self.subTest(code=code):
+                self.assertFalse(DynamicMathExecutor.execute_code_lines(code)['success'])
+
+    def test_empty_or_comments_only_is_failure(self):
+        for code in ['', '   ', '# no extracted numbers', '```python\n# none\n```']:
+            with self.subTest(code=code):
+                result = DynamicMathExecutor.execute_code_lines(code)
+                self.assertFalse(result['success'])
+                self.assertEqual(result['environment'], {})
+
+    def test_final_expression_is_explicitly_available(self):
+        result = DynamicMathExecutor.execute_code_lines('a = 10\nb = 4\na - b')
+        self.assertTrue(result['success'])
+        self.assertEqual(result['result'], 6)
+        self.assertEqual(result['result_name'], '_result')
+        self.assertEqual(result['environment']['_result'], 6)
+        self.assertEqual(result['errors'], [])
+
+    def test_fenced_multiline_list_and_inline_comments(self):
+        code = '```python\nvalues = [\n    10,\n    4,\n]\nresult = sum(values)  # source inputs\n```'
+        result = DynamicMathExecutor.execute_code_lines(code)
+        self.assertTrue(result['success'])
+        self.assertEqual(result['result'], 14)
+        self.assertEqual(result['result_name'], 'result')
+
+    def test_keyword_arguments_are_not_silently_dropped(self):
+        # Previously round(1.234, ndigits=2) silently returned 1 instead of 1.23.
+        result = DynamicMathExecutor.execute_code_lines('a = 10\nresult = round(1.234, ndigits=2)')
+        self.assertFalse(result['success'])
+
+    def test_zero_and_negative_results_are_successes(self):
+        for expression, value in [('10 - 10', 0), ('4 - 10', -6), ('10 / 4', 2.5)]:
+            with self.subTest(expression=expression):
+                result = DynamicMathExecutor.execute_code_lines('result = ' + expression)
+                self.assertTrue(result['success'])
+                self.assertEqual(result['result'], value)
+
+
+class TestMathResultPresentation(unittest.TestCase):
+    def test_failed_runs_are_not_synthesis_input(self):
+        result = DynamicMathExecutor.execute_code_lines('a = 10\nresult = a / 0')
+        self.assertIsNone(format_math_execution_result(result))
+        # Defense against a stale caller supplying an inconsistent result object.
+        result.update(success=True, result=10, environment={'a': 10})
+        self.assertIsNone(format_math_execution_result(result))
+
+    def test_anonymous_and_precise_results_are_visible(self):
+        for code in ('10 - 4', 'result = 1 / 8'):
+            result = DynamicMathExecutor.execute_code_lines(code)
+            details = format_math_execution_result(result)
+            self.assertIn(repr(result['result']), details)
+            self.assertIn('Final result', details)
+        self.assertIn('0.125', format_math_execution_result(
+            DynamicMathExecutor.execute_code_lines('result = 1 / 8')))
+
+    def test_static_failure_messages_are_localized(self):
+        self.assertIn('Hesaplama tamamlanamadı', math_execution_failure_message('tr'))
+        self.assertIn('could not be completed', math_execution_failure_message('en'))
+
 
 if __name__ == "__main__":
     unittest.main()
