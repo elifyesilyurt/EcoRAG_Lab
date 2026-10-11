@@ -19,7 +19,9 @@ from esg_tables import (
     get_water_replenishment_projects_df,
     get_energy_metrics_df,
     get_waste_metrics_df,
-    get_zero_waste_certifications_df
+    get_zero_waste_certifications_df,
+    get_packaging_metrics_df,
+    get_packaging_calendar_metrics_df
 )
 from extraction_pipeline import (
     EXTRACTION_SYSTEM_PROMPT,
@@ -666,34 +668,26 @@ def compute_zero_waste_summary(lang: str = "tr") -> str:
 * **Circular Centers:** Co-located hardware refurbishment centers extend computing asset lifecycles and divert electronic waste from landfills."""
 
 def compute_packaging_summary(lang: str = "tr") -> str:
-    if lang == "tr":
-        return """2026 Çevresel Sürdürülebilirlik Raporu'na göre Microsoft, birincil donanım ve cihaz ambalajlarındaki tek kullanımlık plastik oranını **%0.07** düzeyine indirerek sıfıra yakın eşiğe ulaştırmıştır. Şirket, Surface ve Xbox ambalajlarında plastik köpükleri kaldırarak kalıplanmış kağıt lifleri (molded fiber) ve FSC sertifikalı ambalajlara geçiş yapmıştır.
-
-### 📦 3 Yıllık Ambalaj ve Plastik Azaltım İlerleme Tablosu
-
-| Rapor Dönemi & Yıl | Birincil Ambalaj Plastik Oranı | Değişim & Eğilim | Kullanılan Malzeme & Çözüm | Denetim Standardı |
-| :--- | :---: | :---: | :--- | :--- |
-| 📅 **2024 Raporu (FY23)** | Başlangıç Seviyesi | Reform Başlatıldı | Plastik bant ve köpüklerin azaltılması | TRUE Zero Waste |
-| 📅 **2025 Raporu (FY24)** | **%4.2** | Hızlı Düşüş Eşiği | Kalıplanmış kağıt lifi ve hamuru geçişi | UL 2799 ECVP Prosedürü |
-| 📅 **2026 Raporu (FY25/26)** | **%0.07** | **Sıfıra Yakın Eşik** | FSC sertifikalı kağıt, su bazlı yapıştırıcı | UL Solutions Denetimi |
-| 🎯 **2030 Kurumsal Hedef** | **%0.00** | **%100 Döngüsel** | %100 geri dönüştürülebilir döngüsel ambalaj | Küresel Sıfır Atık Taahhüdü |
-
-### 💡 Temel İnisiyatifler
-* **Molded Fiber Geçişi:** Plastik tamponlar yerine tamamen geri dönüştürülebilir kağıt hamuru ve su bazlı yapıştırıcı bantlar devreye alınmıştır."""
-    else:
-        return """According to the 2026 Environmental Sustainability Report, Microsoft achieved a single-use plastic packaging rate of **0.07%** in primary hardware and devices, declining from 4.2% in 2025 and approaching near-zero plastic design.
-
-### 📦 3-Year Packaging & Plastic Reduction Trajectory Table
-
-| Report Period & Year | Primary Packaging Plastic Rate | Trajectory & Delta | Engineered Solution | Audit Framework |
-| :--- | :---: | :---: | :--- | :--- |
-| 📅 **2024 Report (FY23)** | Baseline Target | Program Initiation | Eliminating plastic foams and non-recyclable films | TRUE Zero Waste |
-| 📅 **2025 Report (FY24)** | **4.2%** | Steep Reduction | Transition to molded fiber pulp cushioning | UL 2799 ECVP Procedure |
-| 📅 **2026 Report (FY25/26)** | **0.07%** | **Historic Near-Zero Low** | 100% FSC-certified fiber, water-based adhesives | UL Solutions Audit |
-| 🎯 **2030 Target** | **0.00%** | **100% Circular Design** | Completely recyclable fiber-based packaging | Corporate Zero Waste Target |
-
-### 💡 Strategic Action
-* **Molded Fiber Pulp:** Molded fiber pulp cushioning replaces petroleum-based foams across Surface and Xbox product packaging."""
+    frame = get_packaging_metrics_df()
+    calendar = get_packaging_calendar_metrics_df()
+    is_tr = lang == "tr"
+    labels = (["Ürün ambalajlarının geri dönüştürülebilirliği", "Birincil ürün ambalajında tek kullanımlık plastik"]
+              if is_tr else list(frame["Metric"]))
+    lines = ["Ambalaj — mali yıl oranları (%)" if is_tr else "Packaging — fiscal-year percentages (%)",
+             "| Metric | FY22 | FY23 | FY24 | FY25 |", "|---|---:|---:|---:|---:|"]
+    for label, (_, row) in zip(labels, frame.iterrows()):
+        lines.append("| " + label + " | " + " | ".join(f"{row[year]:.1f}" for year in ["FY22", "FY23", "FY24", "FY25"]) + " |")
+    actual = calendar.iloc[0]["CY2025"]
+    lines.append((f"2025 takvim yılı sonu (31 Aralık): tek kullanımlık plastik **%{actual:.2f}**. "
+                  "Bu ayrı hedef dönemi ölçümüdür; FY25 değeri yerine kullanılamaz. "
+                  "Kaynakta FY26 değeri verilmemiştir."
+                  if is_tr else
+                  f"Calendar year ended December 31, 2025: single-use plastics **{actual:.2f}%**. "
+                  "This is a separate target-period measurement; it cannot substitute for FY25. "
+                  "No FY26 value is reported in this source."))
+    lines.append("Source: [2026 Data Fact Sheet, Table 11 and footnotes 1–3, p.8](https://aka.ms/SustainabilityFactsheet2026). "
+                 "Historical fiscal-year values are restated; packaging metrics do not establish UL certification or 100% circularity.")
+    return "\n\n".join(lines)
 
 def compute_water_summary(lang: str = "tr") -> str:
     df = get_water_metrics_df().set_index("Metric")
@@ -946,7 +940,7 @@ def get_esg_impact_insight(query: str, answer: str, lang: str = "tr"):
                 "target": "2030 Sıfır Atık & %90+ Operasyonel Çöpten Kurtarma",
                 "actions": (
                     "• **14 UL 2799 Sertifikalı Tesis:** Underwriters Laboratories tarafından bağımsız denetlenen sıfır atık veri merkezi ağı 14 tesise ulaştı.\n\n"
-                    "• **%0.07 Tek Kullanımlık Plastik Seviyesi:** Cihaz ambalajlarında tek kullanımlık plastik terk edilerek FSC sertifikalı kalıplanmış kağıt liflerine geçildi.\n\n"
+                    "• **Ambalaj ölçüm dönemleri:** FY25 tek kullanımlık plastik oranı %4.2; 31 Aralık 2025 takvim yılı sonu oranı %0.07 (2026 Data Fact Sheet, Tablo 11, s.8). Bu dönemler birbirinin yerine kullanılamaz.\n\n"
                     "• **Microsoft Circular Centers:** Ömrünü tamamlayan sunucuların %89.4'ü parça düzeyinde yenilenerek yeniden donanım döngüsüne sokuldu."
                 )
             }
@@ -957,7 +951,7 @@ def get_esg_impact_insight(query: str, answer: str, lang: str = "tr"):
                 "target": "2030 Zero Waste & 90%+ Operational Landfill Diversion",
                 "actions": (
                     "• **14 UL 2799 Certified Datacenter Sites:** Validated zero waste to landfill operations through independent Underwriters Laboratories auditing.\n\n"
-                    "• **0.07% Single-Use Plastic Packaging:** Migrated primary hardware and packaging to 100% recyclable molded fiber designs.\n\n"
+                    "• **Packaging reporting periods:** FY25 single-use plastics 4.2%; calendar year ended December 31, 2025: 0.07% (2026 Data Fact Sheet, Table 11, p.8). These periods are not interchangeable.\n\n"
                     "• **Circular Centers Reuse Engine:** Diverted 89.4% of cloud and datacenter hardware components back into operational reuse."
                 )
             }
@@ -3216,7 +3210,7 @@ with tab_dashboard:
         st.caption(T["dash_t5_cap"])
         if is_tr:
             st.markdown("""
-            - **Tek Kullanımlık Plastik Ambalaj (2025/2026 Takvim Yılı Sonu):** `%0.07` (2030 Sıfır Plastik Hedefi Yolunda)
+            - **Tek Kullanımlık Plastik Ambalaj:** FY25 `%4.2`; 31 Aralık 2025 takvim yılı sonu `%0.07` (2026 Data Fact Sheet, Tablo 11, s.8). FY26 verisi verilmemiştir.
             - **Standart ve Denetim Çerçeveleri:** `TRUE Zero Waste` & `UL 2799 ECVP` Çerçeveleri
             - **Bölgesel Veri Merkezi Elektrik Tüketimleri (Resmi Denetim Raporu):**
               - *Hollanda (Hollands Kroon):* `1,291,170 MWh` (46 Yenilenebilir Varlık)
@@ -3227,7 +3221,7 @@ with tab_dashboard:
             """)
         else:
             st.markdown("""
-            - **Single-Use Plastic Packaging (End of Calendar Year 2025/2026):** `0.07%` (Towards 2030 Zero Plastic Target)
+            - **Single-Use Plastic Packaging:** FY25 `4.2%`; calendar year ended December 31, 2025 `0.07%` (2026 Data Fact Sheet, Table 11, p.8). FY26 is not reported.
             - **Standard & Audit Frameworks:** `TRUE Zero Waste` & `UL 2799 ECVP` Frameworks
             - **Regional Datacenter Electricity Consumption (Audited Official Data):**
               - *Netherlands (Hollands Kroon):* `1,291,170 MWh` (46 Renewable Assets)

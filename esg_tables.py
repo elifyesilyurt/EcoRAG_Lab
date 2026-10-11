@@ -287,3 +287,27 @@ def get_verified_water_context() -> str:
         + get_water_metrics_df().to_string(index=False)
         + "\nThese are annual realized volumes, not contracted lifetime benefits.\n"
     )
+
+
+def get_packaging_metrics_df() -> pd.DataFrame:
+    """Restated fiscal-year percentages; 2026 Fact Sheet Table 11, p.8.
+
+    The CY2025 target-period value belongs to a separate calendar-year series.
+    No fiscal-year interpolation or calendar/fiscal substitution is permitted.
+    """
+    frame = pd.DataFrame({
+        "Metric": ["Product packaging recyclability", "Single-use plastics in primary product packaging"],
+        "Unit": ["%", "%"],
+        "FY22": [94.3, 4.7], "FY23": [93.7, 4.6],
+        "FY24": [94.6, 5.4], "FY25": [95.8, 4.2],
+    })
+    frame.attrs["source"] = "2026 Data Fact Sheet, Table 11, p.8 (restated historical values)"
+    return frame
+
+
+def get_packaging_calendar_metrics_df() -> pd.DataFrame:
+    """Target-period actual: Table 11 footnote 3, calendar year ended Dec 31, 2025."""
+    return pd.DataFrame({
+        "Metric": ["Single-use plastics in primary product packaging"],
+        "Unit": ["%"], "CY2025": [0.07],
+    })

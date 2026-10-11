@@ -140,3 +140,55 @@ class TestWaterInsight(unittest.TestCase):
             self.assertIn('13.266', card['actions'])
             self.assertNotIn('125M', card['actions'])
             self.assertIn('Çekilenden' if language == 'tr' else 'Withdrawn', card['target'])
+
+
+class TestPackagingPeriods(unittest.TestCase):
+    def test_restated_fiscal_values(self):
+        from esg_tables import get_packaging_metrics_df
+        frame = get_packaging_metrics_df().set_index('Metric')
+        expected = {
+            'Product packaging recyclability': [94.3, 93.7, 94.6, 95.8],
+            'Single-use plastics in primary product packaging': [4.7, 4.6, 5.4, 4.2],
+        }
+        for metric, values in expected.items():
+            for year, value in zip(['FY22', 'FY23', 'FY24', 'FY25'], values):
+                with self.subTest(metric=metric, year=year):
+                    self.assertEqual(frame.loc[metric, year], value)
+        self.assertEqual(set(frame['Unit']), {'%'})
+        self.assertNotIn('FY26', frame.columns)
+
+    def test_calendar_actual_is_separate_series(self):
+        from esg_tables import get_packaging_calendar_metrics_df, get_packaging_metrics_df
+        calendar = get_packaging_calendar_metrics_df()
+        self.assertEqual(calendar.iloc[0]['CY2025'], 0.07)
+        self.assertNotIn('FY25', calendar.columns)
+        self.assertNotIn('CY2025', get_packaging_metrics_df().columns)
+
+    def test_bilingual_summaries_explain_periods_and_no_fabricated_certification(self):
+        from esg_tables import get_packaging_calendar_metrics_df, get_packaging_metrics_df
+        functions = load_app_functions({'compute_packaging_summary'}, {
+            'get_packaging_metrics_df': get_packaging_metrics_df,
+            'get_packaging_calendar_metrics_df': get_packaging_calendar_metrics_df,
+        })
+        for lang in ['tr', 'en']:
+            answer = functions['compute_packaging_summary'](lang)
+            self.assertIn('FY24', answer)
+            self.assertIn('5.4', answer)
+            self.assertIn('4.2', answer)
+            self.assertIn('0.07', answer)
+            self.assertIn('FY26', answer)
+            self.assertIn('Table 11', answer)
+            self.assertNotIn('100% FSC', answer)
+            self.assertNotIn('UL Solutions Audit', answer)
+
+    def test_summary_reads_shared_values(self):
+        from esg_tables import get_packaging_calendar_metrics_df, get_packaging_metrics_df
+        def changed():
+            frame = get_packaging_metrics_df()
+            frame.loc[1, 'FY25'] = 3.1
+            return frame
+        functions = load_app_functions({'compute_packaging_summary'}, {
+            'get_packaging_metrics_df': changed,
+            'get_packaging_calendar_metrics_df': get_packaging_calendar_metrics_df,
+        })
+        self.assertIn('3.1', functions['compute_packaging_summary']('en'))
